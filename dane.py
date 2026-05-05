@@ -56,11 +56,22 @@ full_meteo['day'] = full_meteo.index.day
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
 medians = full_meteo.groupby(['month', 'day']).transform('median')
 full_meteo = full_meteo.fillna(medians)
-full_meteo = full_meteo.drop(columns=['month', 'day'])  # usunięcie kolumn pomocniczych
+full_meteo = full_meteo.drop(columns=['day'])  # usunięcie kolumn pomocniczych
 
 print("Ilość dni po poprawkach w danych meteorologicznych:", len(full_meteo))
 print(full_meteo.head())
 print(full_meteo.tail())
+
+#------- CECHY SEZONOWE ------
+sezony = {
+    12: 'zima',  1: 'zima',  2: 'zima', 3: 'wiosna', 4: 'wiosna', 5: 'wiosna',
+    6: 'lato',   7: 'lato',   8: 'lato', 9: 'jesien', 10: 'jesien', 11: 'jesien'
+}
+
+#dodatkowe kolumny informacyjne
+full_meteo['month'] = full_meteo.index.month
+full_meteo['season'] = full_meteo['month'].map(sezony)
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #POZIOM WODY
