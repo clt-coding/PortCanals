@@ -58,6 +58,10 @@ medians = full_meteo.groupby(['month', 'day']).transform('median')
 full_meteo = full_meteo.fillna(medians)
 full_meteo = full_meteo.drop(columns=['month', 'day'])  # usunięcie kolumn pomocniczych
 
+print("Ilość dni po poprawkach w danych meteorologicznych:", len(full_meteo))
+print(full_meteo.head())
+print(full_meteo.tail())
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # dodatkowe wartości ciśnienia
 full_meteo['Ciśnienie_ampl'] = full_meteo['Ciśnienie_max'] - full_meteo['Ciśnienie_min']
@@ -125,9 +129,9 @@ medians = full_water_level.groupby(['month', 'day']).transform('median')
 full_water_level = full_water_level.fillna(medians)
 full_water_level = full_water_level.drop(columns=['month', 'day'])  # usunięcie kolumn pomocniczych
 
-# print("Ilość dni po poprawkach w danych poziomu wody:", len(full_water_level))
-# print(full_water_level.head())
-# print(full_water_level.tail())
+print("Ilość dni po poprawkach w danych poziomu wody:", len(full_water_level))
+print(full_water_level.head())
+print(full_water_level.tail())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # połączenie w jeden database
