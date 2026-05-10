@@ -32,13 +32,13 @@ for file in meteo_files:
         "Opad [mm]": "sum",
         "Temperatura [C]": ["mean", "min", "max"],
         "Wilgotność [%]": "mean",
-        "Ciśnienie [hPa]": "mean"
+        "Ciśnienie [hPa]": ["mean", "min", "max"],
     })
     df_dobowe.columns = [
         'Opad_suma',
         'Temp_średnia', 'Temp_min', 'Temp_max',
         'Wilgotność_średnia',
-        'Ciśnienie_średnia'
+        'Ciśnienie_średnia', "Ciśnienie_min", "Ciśnienie_max",
     ]
     all_meteo.append(df_dobowe)
 
@@ -81,6 +81,28 @@ full_meteo['cos_doy'] = np.cos(2 * np.pi * full_meteo['doy'] / 365)
 print("\nMETEO:")
 print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].head())
 print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].tail())
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# dodatkowe wartości ciśnienia
+full_meteo['Ciśnienie_ampl'] = full_meteo['Ciśnienie_max'] - full_meteo['Ciśnienie_min']
+full_meteo['Ciśnienie_delta_1d'] = full_meteo['Ciśnienie_średnia'].diff()
+full_meteo['Ciśnienie_delta_2d'] = full_meteo['Ciśnienie_średnia'] - full_meteo['Ciśnienie_średnia'].shift(2)
+full_meteo['Ciśnienie_delta_3d'] = full_meteo['Ciśnienie_średnia'] - full_meteo['Ciśnienie_średnia'].shift(3)
+full_meteo['Ciśnienie_trend_3d'] = full_meteo['Ciśnienie_średnia'].rolling(3, min_periods=1).mean()
+full_meteo['Ciśnienie_trend_7d'] = full_meteo['Ciśnienie_średnia'].rolling(7, min_periods=1).mean()
+
+# przybliżone cechy wiatru na podstawie ciśnienia
+full_meteo['Wiatr_siła_proxy'] = full_meteo['Ciśnienie_delta_1d'].abs()
+full_meteo['Wiatr_kierunek_proxy'] = np.sign(full_meteo['Ciśnienie_delta_1d'])
+
+# usunięcie NaN
+full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_1d')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_2d')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_3d')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_siła_proxy')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_kierunek_proxy')] = 0
+full_meteo.loc[full_meteo.index[1], ['Ciśnienie_delta_2d', 'Ciśnienie_delta_3d']] = 0
+full_meteo.loc[full_meteo.index[2], ['Ciśnienie_delta_3d']] = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #POZIOM WODY
@@ -146,3 +168,23 @@ full_water_level['cos_doy'] = np.cos(2 * np.pi * full_water_level['doy'] / 365)
 print("\nPOZIOM WODY:")
 print(full_water_level[['month', 'season', 'sin_doy', 'cos_doy']].head())
 print(full_water_level[['month', 'season', 'sin_doy', 'cos_doy']].tail())
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# połączenie w jeden database
+final = full_meteo.join(full_water_level, how='inner')
+
+# wyświetlanie wszystkich kolumn
+# pd.set_option('display.max_columns', None)
+# pd.set_option('display.width', None)~
+
+print(final)
+# Opady skumulowane jako proxy nasycenia zlewni
+
+# Window=1 to 24h, Window=3 to 72h, Window=7 to 7 dni
+# rolling - patrzy na obecny dzień oraz dwa dni poprzednie
+full_meteo['Opad_24h'] = full_meteo['Opad_suma'].rolling(window=1).sum()
+full_meteo['Opad_72h'] = full_meteo['Opad_suma'].rolling(window=3).sum()
+full_meteo['Opad_7d'] = full_meteo['Opad_suma'].rolling(window=7).sum()
+
+full_meteo[['Opad_72h', 'Opad_7d']] = full_meteo[['Opad_72h', 'Opad_7d']].bfill()
+print("Nowe kolumny nasycenia:")
+print(full_meteo[['Opad_suma', 'Opad_24h', 'Opad_72h', 'Opad_7d']].head(10))
