@@ -111,6 +111,22 @@ print("Ilość dni po poprawkach w danych poziomu wody:", len(full_water_level))
 print(full_water_level.head())
 print(full_water_level.tail())
 
+#Opóźnienia (lagi) - przesunięcie danych o 1, 2, 3 dni wstecz
+# Tworzenie opóźnień dla sumy opadu (np. od 1 do 3 dni)
+for i in range(1, 4):
+    full_meteo[f'Opad_lag_{i}d'] = full_meteo['Opad_suma'].shift(i)
+
+# Tworzenie opóźnień dla temperatury
+# Może być przydatne zimą (topnienie śniegu)
+full_meteo['Temp_średnia_lag_1d'] = full_meteo['Temp_średnia'].shift(1)
+
+# Obsługa wartości NaN powstałych przez przesunięcie - wypełniamy je zerami
+cols_to_fill = [f'Opad_lag_{i}d' for i in range(1, 4)] + ['Temp_średnia_lag_1d']
+full_meteo[cols_to_fill] = full_meteo[cols_to_fill].fillna(0)
+
+print("Dane z opóźnieniami:")
+print(full_meteo[[ 'Opad_suma', 'Opad_lag_1d', 'Opad_lag_2d']].head())
+
 # Opady skumulowane jako proxy nasycenia zlewni
 
 # Window=1 to 24h, Window=3 to 72h, Window=7 to 7 dni
