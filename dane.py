@@ -56,11 +56,31 @@ full_meteo['day'] = full_meteo.index.day
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
 medians = full_meteo.groupby(['month', 'day']).transform('median')
 full_meteo = full_meteo.fillna(medians)
-full_meteo = full_meteo.drop(columns=['month', 'day'])  # usunięcie kolumn pomocniczych
+full_meteo = full_meteo.drop(columns=['day'])  # usunięcie kolumny pomocniczej
 
 print("Ilość dni po poprawkach w danych meteorologicznych:", len(full_meteo))
 print(full_meteo.head())
 print(full_meteo.tail())
+
+#------- CECHY SEZONOWE ------
+sezony = {
+    12: 'zima',  1: 'zima',  2: 'zima', 3: 'wiosna', 4: 'wiosna', 5: 'wiosna',
+    6: 'lato',   7: 'lato',   8: 'lato', 9: 'jesien', 10: 'jesien', 11: 'jesien'
+}
+
+#dodajemy kolumny:
+#sezon -> lato/jesien/zima/wiosna
+full_meteo['season'] = full_meteo['month'].map(sezony)
+#nr dnia roku -> (1-365)
+full_meteo['doy'] = full_meteo.index.dayofyear
+#sin/cos doy -> zoobrazowuje odległość dni roku, względem jego cyckliczności
+full_meteo['sin_doy'] = np.sin(2 * np.pi * full_meteo['doy'] / 365)
+full_meteo['cos_doy'] = np.cos(2 * np.pi * full_meteo['doy'] / 365)
+
+#sprawdzenie
+print("\nMETEO:")
+print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].head())
+print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].tail())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # dodatkowe wartości ciśnienia
@@ -127,12 +147,27 @@ full_water_level['day'] = full_water_level.index.day
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
 medians = full_water_level.groupby(['month', 'day']).transform('median')
 full_water_level = full_water_level.fillna(medians)
-full_water_level = full_water_level.drop(columns=['month', 'day'])  # usunięcie kolumn pomocniczych
+full_water_level = full_water_level.drop(columns=['day'])  # usunięcie kolumny pomocniczej
 
 print("Ilość dni po poprawkach w danych poziomu wody:", len(full_water_level))
 print(full_water_level.head())
 print(full_water_level.tail())
 
+#------- CECHY SEZONOWE ------
+
+#dodajemy kolumny:
+#sezon -> lato/jesien/zima/wiosna
+full_water_level['season'] = full_water_level['month'].map(sezony)
+#nr dnia roku -> (1-365)
+full_water_level['doy'] = full_water_level.index.dayofyear
+#sin/cos doy -> zoobrazowuje odległość dni roku, względem jego cyckliczności
+full_water_level['sin_doy'] = np.sin(2 * np.pi * full_water_level['doy'] / 365)
+full_water_level['cos_doy'] = np.cos(2 * np.pi * full_water_level['doy'] / 365)
+
+#sprawdzenie
+print("\nPOZIOM WODY:")
+print(full_water_level[['month', 'season', 'sin_doy', 'cos_doy']].head())
+print(full_water_level[['month', 'season', 'sin_doy', 'cos_doy']].tail())
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # połączenie w jeden database
 final = full_meteo.join(full_water_level, how='inner')
