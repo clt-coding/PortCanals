@@ -142,3 +142,14 @@ final = full_meteo.join(full_water_level, how='inner')
 # pd.set_option('display.width', None)~
 
 print(final)
+# Opady skumulowane jako proxy nasycenia zlewni
+
+# Window=1 to 24h, Window=3 to 72h, Window=7 to 7 dni
+# rolling - patrzy na obecny dzień oraz dwa dni poprzednie
+full_meteo['Opad_24h'] = full_meteo['Opad_suma'].rolling(window=1).sum()
+full_meteo['Opad_72h'] = full_meteo['Opad_suma'].rolling(window=3).sum()
+full_meteo['Opad_7d'] = full_meteo['Opad_suma'].rolling(window=7).sum()
+
+full_meteo[['Opad_72h', 'Opad_7d']] = full_meteo[['Opad_72h', 'Opad_7d']].bfill()
+print("Nowe kolumny nasycenia:")
+print(full_meteo[['Opad_suma', 'Opad_24h', 'Opad_72h', 'Opad_7d']].head(10))
