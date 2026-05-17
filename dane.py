@@ -84,27 +84,36 @@ print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].tail())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # dodatkowe wartości ciśnienia
-full_meteo['Ciśnienie_ampl'] = full_meteo['Ciśnienie_max'] - full_meteo['Ciśnienie_min']
-full_meteo['Ciśnienie_delta_1d'] = full_meteo['Ciśnienie_średnia'].diff()
-full_meteo['Ciśnienie_delta_2d'] = full_meteo['Ciśnienie_średnia'] - full_meteo['Ciśnienie_średnia'].shift(2)
-full_meteo['Ciśnienie_delta_3d'] = full_meteo['Ciśnienie_średnia'] - full_meteo['Ciśnienie_średnia'].shift(3)
-full_meteo['Ciśnienie_trend_3d'] = full_meteo['Ciśnienie_średnia'].rolling(3, min_periods=1).mean()
-full_meteo['Ciśnienie_trend_7d'] = full_meteo['Ciśnienie_średnia'].rolling(7, min_periods=1).mean()
+full_meteo['Ciśnienie_ampl'] = full_meteo['Ciśnienie_max'] - full_meteo['Ciśnienie_min'] # amplituda ciśnienia w ciągu dnia
+full_meteo['Ciśnienie_delta_1d'] = full_meteo['Ciśnienie_średnia'].diff() # różnica ciśnienia względem poprzedniego dnia
+full_meteo['Ciśnienie_delta_2d'] = full_meteo['Ciśnienie_średnia'] - full_meteo['Ciśnienie_średnia'].shift(2) # różnica ciśnienia względem dwóch dni wcześniej
+full_meteo['Ciśnienie_delta_3d'] = full_meteo['Ciśnienie_średnia'] - full_meteo['Ciśnienie_średnia'].shift(3) # różnica ciśnienia względem trzech dni wcześniej
+full_meteo['Ciśnienie_trend_3d'] = full_meteo['Ciśnienie_średnia'].rolling(3, min_periods=1).mean() # średnia ciśnienia z ostatnich 3 dni (w tym obecny)
+full_meteo['Ciśnienie_trend_7d'] = full_meteo['Ciśnienie_średnia'].rolling(7, min_periods=1).mean() # średnia ciśnienia z ostatnich 7 dni (w tym obecny)
 
 # przybliżone cechy wiatru na podstawie ciśnienia
-full_meteo['Wiatr_siła_proxy'] = full_meteo['Ciśnienie_delta_1d'].abs()
-full_meteo['Wiatr_kierunek_proxy'] = np.sign(full_meteo['Ciśnienie_delta_1d'])
+full_meteo['Wiatr_siła_proxy'] = full_meteo['Ciśnienie_delta_1d'].abs() # siła wiatru jako bezwzględna zmiana ciśnienia względem poprzedniego dnia (duża zmiana -> silniejszy wiatr)
+full_meteo['Wiatr_kierunek_proxy'] = np.sign(full_meteo['Ciśnienie_delta_1d']) # kierunek wiatru jako znak zmiany ciśnienia: -1 = spadek ciśnienia (wiatr z kierunku niskiego ciśnienia), 0 = stabilnie, 1 = wzrost ciśnienia (wiatr z kierunku wysokiego ciśnienia)
 full_meteo['Wiatr_sektor_proxy'] = full_meteo['Wiatr_kierunek_proxy'].map({
     -1: 'spadek_cisnienia',
      0: 'stabilnie',
      1: 'wzrost_cisnienia'
-})
+}) 
+# zamiana kierunku barycznego (-1/0/1) na sztuczny kąt:
+# UWAGA: to NIE są kierunki świata, tylko matematyczna reprezentacja trendu ciśnienia
 angles = {1: 0, 0: 90, -1: 180}
-full_meteo['Wiatr_kąt_proxy'] = full_meteo['Wiatr_kierunek_proxy'].map(angles)
+full_meteo['Wiatr_kąt_proxy'] = full_meteo['Wiatr_kierunek_proxy'].map(angles) # kąt wiatru jako liczba: 0° dla wzrostu ciśnienia, 90° dla stabilności, 180° dla spadku ciśnienia
 
-full_meteo['Wiatr_sin_proxy'] = np.sin(np.deg2rad(full_meteo['Wiatr_kąt_proxy']))
-full_meteo['Wiatr_cos_proxy'] = np.cos(np.deg2rad(full_meteo['Wiatr_kąt_proxy']))
+# modele ML lepiej uczą się z wartości ciągłych niż z kategorii -1/0/1
+# (sin, cos) NIE oznaczają kierunku geograficznego – tylko pozycję trendu barycznego na okręgu
+full_meteo['Wiatr_sin_proxy'] = np.sin(np.deg2rad(full_meteo['Wiatr_kąt_proxy'])) # sinus kąta wiatru jako cecha numeryczna
+full_meteo['Wiatr_cos_proxy'] = np.cos(np.deg2rad(full_meteo['Wiatr_kąt_proxy'])) # cosinus kąta wiatru jako cecha numeryczna
 
+# Wszystkie możliwe kombinacje trendu ciśnienia i odpowiadające im cechy wiatru:
+# Trend ciśnienia	Kąt proxy	Wiatr_sin_proxy	Wiatr_cos_proxy
+# wzrost (+1)	    0°	        0.0	            1.0
+# stabilnie (0)	    90°	        1.0	            0.0
+# spadek (–1)	    180°	    0.0	            –1.0
 
 # usunięcie NaN
 full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_1d')] = 0
