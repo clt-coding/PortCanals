@@ -94,6 +94,17 @@ full_meteo['Ciśnienie_trend_7d'] = full_meteo['Ciśnienie_średnia'].rolling(7,
 # przybliżone cechy wiatru na podstawie ciśnienia
 full_meteo['Wiatr_siła_proxy'] = full_meteo['Ciśnienie_delta_1d'].abs()
 full_meteo['Wiatr_kierunek_proxy'] = np.sign(full_meteo['Ciśnienie_delta_1d'])
+full_meteo['Wiatr_sektor_proxy'] = full_meteo['Wiatr_kierunek_proxy'].map({
+    -1: 'spadek_cisnienia',
+     0: 'stabilnie',
+     1: 'wzrost_cisnienia'
+})
+angles = {1: 0, 0: 90, -1: 180}
+full_meteo['Wiatr_kąt_proxy'] = full_meteo['Wiatr_kierunek_proxy'].map(angles)
+
+full_meteo['Wiatr_sin_proxy'] = np.sin(np.deg2rad(full_meteo['Wiatr_kąt_proxy']))
+full_meteo['Wiatr_cos_proxy'] = np.cos(np.deg2rad(full_meteo['Wiatr_kąt_proxy']))
+
 
 # usunięcie NaN
 full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_1d')] = 0
@@ -101,6 +112,10 @@ full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_2d')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_3d')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_siła_proxy')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_kierunek_proxy')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_sektor_proxy')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_kąt_proxy')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_sin_proxy')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_cos_proxy')] = 0
 full_meteo.loc[full_meteo.index[1], ['Ciśnienie_delta_2d', 'Ciśnienie_delta_3d']] = 0
 full_meteo.loc[full_meteo.index[2], ['Ciśnienie_delta_3d']] = 0
 
