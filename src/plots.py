@@ -1,0 +1,1 @@
+# tu beda funkcje do generowania wykresów -> wywoływane w notebookach
