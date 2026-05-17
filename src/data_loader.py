@@ -7,12 +7,12 @@ def load_data():
         return pd.read_csv('data/processed/final.csv', index_col='Data',parse_dates=True)  # szybka ścieżka
     else:
 
-        meteo_files = [f for f in os.listdir('data/dane-2021-2025/dane-pogodowe-stacja-gora-gradowa-2021-2025') if
+        meteo_files = [f for f in os.listdir('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025') if
                        f.endswith('.xlsx')]
         all_meteo = []
 
         for file in meteo_files:
-            path = os.path.join('data/dane-2021-2025/dane-pogodowe-stacja-gora-gradowa-2021-2025', file)
+            path = os.path.join('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025', file)
             df = pd.read_excel(path, skipfooter=4)
             df = df.dropna(how='all')
             df.columns = df.columns.str.strip()
@@ -146,12 +146,12 @@ def load_data():
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # POZIOM WODY
-        water_level_files = [f for f in os.listdir('data/dane-2021-2025/poziom-wody-ujscie-rzeki-strzyza-2021-2025') if
+        water_level_files = [f for f in os.listdir('data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025') if
                              f.endswith('.xlsx')]
         all_water_level = []
 
         for file in water_level_files:
-            path = os.path.join('data/dane-2021-2025/poziom-wody-ujscie-rzeki-strzyza-2021-2025', file)
+            path = os.path.join('data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025', file)
             df = pd.read_excel(path, skipfooter=4, usecols=[0, 1])
             df = df.dropna(how='all')
             df.columns = df.columns.str.strip()
