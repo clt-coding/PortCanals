@@ -50,13 +50,13 @@ full_meteo = full_meteo.reindex(full_range_meteo)
 full_meteo.index.name = 'Data'
 
 # kolumny pomocnicze
-full_meteo['month'] = full_meteo.index.month
-full_meteo['day'] = full_meteo.index.day
+full_meteo['Miesiąc'] = full_meteo.index.month
+full_meteo['Dzień'] = full_meteo.index.day
 
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
-medians = full_meteo.groupby(['month', 'day']).transform('median')
+medians = full_meteo.groupby(['Miesiąc', 'Dzień']).transform('median')
 full_meteo = full_meteo.fillna(medians)
-full_meteo = full_meteo.drop(columns=['day'])  # usunięcie kolumny pomocniczej
+full_meteo = full_meteo.drop(columns=['Dzień'])  # usunięcie kolumny pomocniczej
 
 print("Ilość dni po poprawkach w danych meteorologicznych:", len(full_meteo))
 print(full_meteo.head())
@@ -70,17 +70,17 @@ sezony = {
 
 #dodajemy kolumny:
 #sezon -> lato/jesien/zima/wiosna
-full_meteo['season'] = full_meteo['month'].map(sezony)
+full_meteo['Pora_roku'] = full_meteo['Miesiąc'].map(sezony)
 #nr dnia roku -> (1-365)
-full_meteo['doy'] = full_meteo.index.dayofyear
+full_meteo['Nr_dnia_roku'] = full_meteo.index.dayofyear
 #sin/cos doy -> zoobrazowuje odległość dni roku, względem jego cyckliczności
-full_meteo['sin_doy'] = np.sin(2 * np.pi * full_meteo['doy'] / 365)
-full_meteo['cos_doy'] = np.cos(2 * np.pi * full_meteo['doy'] / 365)
+full_meteo['Sin_nr_dnia_roku'] = np.sin(2 * np.pi * full_meteo['Nr_dnia_roku'] / 365)
+full_meteo['Cos_nr_dnia_roku'] = np.cos(2 * np.pi * full_meteo['Nr_dnia_roku'] / 365)
 
 #sprawdzenie
 print("\nMETEO:")
-print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].head())
-print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].tail())
+print(full_meteo[['Miesiąc', 'Pora_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']].head())
+print(full_meteo[['Miesiąc', 'Pora_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']].tail())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # dodatkowe wartości ciśnienia
@@ -121,7 +121,7 @@ full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_2d')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_3d')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_siła_proxy')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_kierunek_proxy')] = 0
-full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_sektor_proxy')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_sektor_proxy')] = 'stabilnie'
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_kąt_proxy')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_sin_proxy')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_cos_proxy')] = 0
@@ -141,8 +141,6 @@ for file in water_level_files:
 
     df['Poziom wody [m]'] = df['Poziom wody [m]'].astype(str).str.replace(',', '.')
     df['Poziom wody [m]'] = pd.to_numeric(df['Poziom wody [m]'], errors='coerce')
-
-    # df.loc[(df[nazwa_kolumny] < -10) | (df[nazwa_kolumny] > 10), nazwa_kolumny] = np.nan
 
     df = df.dropna(subset=['Poziom wody [m]'])
 
@@ -165,13 +163,13 @@ full_water_level = full_water_level.reindex(full_range_wl)
 full_water_level.index.name = 'Data'
 
 # kolumny pomocnicze
-full_water_level['month'] = full_water_level.index.month
-full_water_level['day'] = full_water_level.index.day
+full_water_level['Miesiąc'] = full_water_level.index.month
+full_water_level['Dzień'] = full_water_level.index.day
 
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
-medians = full_water_level.groupby(['month', 'day']).transform('median')
+medians = full_water_level.groupby(['Miesiąc', 'Dzień']).transform('median')
 full_water_level = full_water_level.fillna(medians)
-full_water_level = full_water_level.drop(columns=['day'])  # usunięcie kolumny pomocniczej
+full_water_level = full_water_level.drop(columns=['Dzień'])  # usunięcie kolumny pomocniczej
 
 print("Ilość dni po poprawkach w danych poziomu wody:", len(full_water_level))
 print(full_water_level.head())
@@ -197,34 +195,38 @@ print(full_meteo[[ 'Opad_suma', 'Opad_lag_1d', 'Opad_lag_2d']].head())
 
 #dodajemy kolumny:
 #sezon -> lato/jesien/zima/wiosna
-full_water_level['season'] = full_water_level['month'].map(sezony)
+full_water_level['Pora_roku'] = full_water_level['Miesiąc'].map(sezony)
 #nr dnia roku -> (1-365)
-full_water_level['doy'] = full_water_level.index.dayofyear
+full_water_level['Nr_dnia_roku'] = full_water_level.index.dayofyear
 #sin/cos doy -> zoobrazowuje odległość dni roku, względem jego cyckliczności
-full_water_level['sin_doy'] = np.sin(2 * np.pi * full_water_level['doy'] / 365)
-full_water_level['cos_doy'] = np.cos(2 * np.pi * full_water_level['doy'] / 365)
+full_water_level['Sin_nr_dnia_roku'] = np.sin(2 * np.pi * full_water_level['Nr_dnia_roku'] / 365)
+full_water_level['Cos_nr_dnia_roku'] = np.cos(2 * np.pi * full_water_level['Nr_dnia_roku'] / 365)
 
 #sprawdzenie
 print("\nPOZIOM WODY:")
-print(full_water_level[['month', 'season', 'sin_doy', 'cos_doy']].head())
-print(full_water_level[['month', 'season', 'sin_doy', 'cos_doy']].tail())
+print(full_water_level[['Miesiąc', 'Pora_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']].head())
+print(full_water_level[['Miesiąc', 'Pora_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']].tail())
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# połączenie w jeden database
-final = full_meteo.join(full_water_level, how='inner')
-
-# wyświetlanie wszystkich kolumn
-# pd.set_option('display.max_columns', None)
-# pd.set_option('display.width', None)~
-
-print(final)
 # Opady skumulowane jako proxy nasycenia zlewni
 
-# Window=1 to 24h, Window=3 to 72h, Window=7 to 7 dni
+# 24h to Opad_suma, Window=3 to 72h, Window=7 to 7 dni
 # rolling - patrzy na obecny dzień oraz dwa dni poprzednie
-full_meteo['Opad_24h'] = full_meteo['Opad_suma'].rolling(window=1).sum()
 full_meteo['Opad_72h'] = full_meteo['Opad_suma'].rolling(window=3).sum()
 full_meteo['Opad_7d'] = full_meteo['Opad_suma'].rolling(window=7).sum()
 
 full_meteo[['Opad_72h', 'Opad_7d']] = full_meteo[['Opad_72h', 'Opad_7d']].bfill()
 print("Nowe kolumny nasycenia:")
-print(full_meteo[['Opad_suma', 'Opad_24h', 'Opad_72h', 'Opad_7d']].head(10))
+print(full_meteo[['Opad_suma', 'Opad_72h', 'Opad_7d']].head(10))
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+# połączenie w jeden database, usuwamy zduplikowane kolumny z poziomu wody przed połączeniem
+kolumny_do_usuniecia = ['Miesiąc', 'Pora_roku', 'Nr_dnia_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']
+final = full_meteo.join(full_water_level.drop(columns=kolumny_do_usuniecia), how='inner')
+
+# wyświetlanie wszystkich kolumn
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+
+print(final)
