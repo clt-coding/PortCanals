@@ -142,6 +142,8 @@ for file in water_level_files:
     df['Poziom wody [m]'] = df['Poziom wody [m]'].astype(str).str.replace(',', '.')
     df['Poziom wody [m]'] = pd.to_numeric(df['Poziom wody [m]'], errors='coerce')
 
+    df.loc[(df['Poziom wody [m]'] < -0.5) | (df['Poziom wody [m]'] > 2.0), 'Poziom wody [m]'] = np.nan
+
     df = df.dropna(subset=['Poziom wody [m]'])
 
     df["Data"] = pd.to_datetime(df["Data"])
@@ -234,6 +236,8 @@ print(final)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ WIZUALIZACJE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# ~~~~~~~~~~~~ SEZONOWOŚĆ ~~~~~~~~~~~~~~~
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -250,7 +254,7 @@ plt.ylabel('Poziom wody [m]')
 plt.xlabel('Data')
 plt.legend()
 plt.tight_layout()
-plt.savefig('reports/sezonowosc_poziomu_wody/przebieg_poziomu_wody_dobowo')
+plt.savefig('reports/sezonowosc_poziomu_wody/przebieg_poziomu_wody_dobowo', dpi=300)
 
 
 # SEZONOWOŚĆ WEDŁUG PÓR ROKU (BOXPLOT)
@@ -262,7 +266,7 @@ plt.title('Rozkład średniego dobowego poziomu wody w zależności od pory roku
 plt.ylabel('Średni poziom wody [m]')
 plt.xlabel('Pora roku')
 plt.tight_layout()
-plt.savefig('reports/sezonowosc_poziomu_wody/sezonowosc_wg_por_roku')
+plt.savefig('reports/sezonowosc_poziomu_wody/sezonowosc_wg_por_roku', dpi=300)
 
 
 # SEZONOWOŚĆ WEDŁUG MIESIĘCY (BOXPLOT)
@@ -273,4 +277,81 @@ plt.title('Rozkład średniego dobowego poziomu wody w poszczególnych miesiąca
 plt.ylabel('Średni poziom wody [m]')
 plt.xlabel('Miesiąc (1=Styczeń, 12=Grudzień)')
 plt.tight_layout()
-plt.savefig('reports/sezonowosc_poziomu_wody/sezonowosc_wg_miesiecy')
+plt.savefig('reports/sezonowosc_poziomu_wody/sezonowosc_wg_miesiecy', dpi=300)
+
+
+# ~~~~~~~~~~~~ ZALEŻNOŚCI ~~~~~~~~~~~~~~~
+
+# ZALEŻNOŚCI METEO - POZIOM WODY (OGÓLNIE)
+plt.figure(figsize=(10, 6))
+# Używamy Opad_72h jako proxy nasycenia ziemi i sumy deszczu
+sns.scatterplot(data=final, x='Opad_72h', y='Poziom_wody_max', alpha=0.5, color='royalblue')
+plt.title('Zależność ogólna: Opad skumulowany (72h) a maksymalny poziom wody', fontsize=14)
+plt.xlabel('Opad skumulowany z 3 dni [mm]')
+plt.ylabel('Maksymalny dobowy poziom wody [m]')
+plt.tight_layout()
+plt.savefig('reports/zaleznosci_poziom_wody/zaleznosc_opad_woda_ogolnie.png', dpi=300)
+
+
+# ZALEŻNOŚCI METEO - POZIOM WODY (Z PODZIAŁEM NA SEZONY)
+plt.figure(figsize=(12, 7))
+sns.scatterplot(data=final, x='Opad_72h', y='Poziom_wody_max', hue='Pora_roku',
+                palette='bright', alpha=0.7, s=60)
+plt.title('Zależność: Opad skumulowany a poziom wody w różnych porach roku', fontsize=14)
+plt.xlabel('Opad skumulowany z 3 dni [mm]')
+plt.ylabel('Maksymalny dobowy poziom wody [m]')
+plt.legend(title='Pora roku')
+plt.tight_layout()
+plt.savefig('reports/zaleznosci_poziom_wody/zaleznosc_opad_woda_sezony.png', dpi=300)
+
+
+# ZALEŻNOŚĆ CIŚNIENIA (PROXY WIATRU/COFKI) A POZIOM WODY
+plt.figure(figsize=(12, 7))
+sns.scatterplot(data=final, x='Ciśnienie_delta_1d', y='Poziom_wody_max', hue='Pora_roku',
+                palette='bright', alpha=0.7, s=60)
+plt.title('Wpływ zmiany ciśnienia (proxy wiatru/sztormu) na poziom wody', fontsize=14)
+plt.xlabel('Zmiana ciśnienia względem poprzedniego dnia [hPa] (Wartości ujemne = spadek/niż)')
+plt.ylabel('Maksymalny dobowy poziom wody [m]')
+plt.axvline(0, color='grey', linestyle='--') # Linia oddzielająca spadki od wzrostów ciśnienia
+plt.legend(title='Pora roku')
+plt.tight_layout()
+plt.savefig('reports/zaleznosci_poziom_wody/zaleznosc_cisnienie_woda_sezony.png', dpi=300)
+
+# ~~~~~~~~~~~~ ANALIZA OPÓŹNIEŃ ~~~~~~~~~~~~~~~
+
+# ANALIZA OPÓŹNIEŃ (KORELACJA Z LAGAMI)
+# Obliczamy korelację między maksymalnym poziomem wody a opadami z różnych dni
+lagi_opadu = ['Opad_suma', 'Opad_lag_1d', 'Opad_lag_2d', 'Opad_lag_3d']
+korelacje = final[lagi_opadu].apply(lambda x: x.corr(final['Poziom_wody_max']))
+nazwy_lagow = ['W tym samym dniu', '1 dzień po', '2 dni po', '3 dni po']
+
+plt.figure(figsize=(8, 5))
+sns.barplot(x=nazwy_lagow, y=korelacje.values, hue=nazwy_lagow, palette='viridis', legend=False)
+plt.title('Korelacja między opadem a poziomem wody w zależności od opóźnienia', fontsize=14)
+plt.ylabel('Współczynnik korelacji (Pearson)')
+plt.xlabel('Czas reakcji na opad')
+plt.tight_layout()
+plt.savefig('reports/analiza_opoznien/korelacja_opoznien_slupki.png', dpi=300)
+
+# ANALIZA OPÓŹNIEŃ (WYKRESY PUNKTOWE)
+fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
+
+# Dzień zero
+sns.scatterplot(ax=axes[0], data=final, x='Opad_suma', y='Poziom_wody_max', alpha=0.5, color='blue')
+axes[0].set_title('Opad w tym samym dniu')
+axes[0].set_xlabel('Suma opadu [mm]')
+axes[0].set_ylabel('Maksymalny dobowy poziom wody [m]')
+
+# 1 dzień opóźnienia
+sns.scatterplot(ax=axes[1], data=final, x='Opad_lag_1d', y='Poziom_wody_max', alpha=0.5, color='orange')
+axes[1].set_title('1 dzień po opadzie')
+axes[1].set_xlabel('Suma opadu (wczoraj) [mm]')
+
+# 2 dni opóźnienia
+sns.scatterplot(ax=axes[2], data=final, x='Opad_lag_2d', y='Poziom_wody_max', alpha=0.5, color='green')
+axes[2].set_title('2 dni po opadzie')
+axes[2].set_xlabel('Suma opadu (przedwczoraj) [mm]')
+
+plt.suptitle('Porównanie reakcji rzeki na opad z opóźnieniem', fontsize=16)
+plt.tight_layout()
+plt.savefig('reports/analiza_opoznien/scatter_opoznienia_panel.png', dpi=300)
