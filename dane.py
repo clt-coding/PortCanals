@@ -3,11 +3,11 @@ import numpy as np
 import os
 
 #METEOROLOGICZNE
-meteo_files = [f for f in os.listdir('dane-2021-2025/dane-pogodowe-stacja-gora-gradowa-2021-2025') if f.endswith('.xlsx')]
+meteo_files = [f for f in os.listdir('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025') if f.endswith('.xlsx')]
 all_meteo = []
 
 for file in meteo_files:
-    path = os.path.join('dane-2021-2025/dane-pogodowe-stacja-gora-gradowa-2021-2025', file)
+    path = os.path.join('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025', file)
     df = pd.read_excel(path, skipfooter=4)
     df = df.dropna(how='all')
     df.columns = df.columns.str.strip()
@@ -130,11 +130,11 @@ full_meteo.loc[full_meteo.index[2], ['Ciśnienie_delta_3d']] = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #POZIOM WODY
-water_level_files = [f for f in os.listdir('dane-2021-2025/poziom-wody-ujscie-rzeki-strzyza-2021-2025') if f.endswith('.xlsx')]
+water_level_files = [f for f in os.listdir('data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025') if f.endswith('.xlsx')]
 all_water_level = []
 
 for file in water_level_files:
-    path = os.path.join('dane-2021-2025/poziom-wody-ujscie-rzeki-strzyza-2021-2025', file)
+    path = os.path.join('data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025', file)
     df = pd.read_excel(path, skipfooter=4, usecols=[0, 1])
     df = df.dropna(how='all')
     df.columns = df.columns.str.strip()
@@ -230,3 +230,47 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 
 print(final)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ WIZUALIZACJE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Ustawienie estetycznego stylu dla wykresów
+sns.set_theme(style="whitegrid")
+
+
+# PRZEBIEG POZIOMU WODY W CZASIE (DOBOWO)
+plt.figure(figsize=(15, 5))
+plt.plot(final.index, final['Poziom_wody_średnia'], label='Średni dobowy poziom', color='teal', alpha=0.7)
+plt.plot(final.index, final['Poziom_wody_max'], label='Maksymalny dobowy poziom', color='red', alpha=0.5)
+plt.title('Przebieg poziomu wody na rzece Strzyża w latach 2021-2025', fontsize=14)
+plt.ylabel('Poziom wody [m]')
+plt.xlabel('Data')
+plt.legend()
+plt.tight_layout()
+plt.savefig('reports/sezonowosc_poziomu_wody/przebieg_poziomu_wody_dobowo')
+
+
+# SEZONOWOŚĆ WEDŁUG PÓR ROKU (BOXPLOT)
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=final, x='Pora_roku', y='Poziom_wody_średnia',
+            hue='Pora_roku', order=['wiosna', 'lato', 'jesien', 'zima'],
+            palette='pastel', legend=False)
+plt.title('Rozkład średniego dobowego poziomu wody w zależności od pory roku', fontsize=14)
+plt.ylabel('Średni poziom wody [m]')
+plt.xlabel('Pora roku')
+plt.tight_layout()
+plt.savefig('reports/sezonowosc_poziomu_wody/sezonowosc_wg_por_roku')
+
+
+# SEZONOWOŚĆ WEDŁUG MIESIĘCY (BOXPLOT)
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=final, x='Miesiąc', y='Poziom_wody_średnia',
+            hue='Miesiąc', palette='Set3', legend=False)
+plt.title('Rozkład średniego dobowego poziomu wody w poszczególnych miesiącach', fontsize=14)
+plt.ylabel('Średni poziom wody [m]')
+plt.xlabel('Miesiąc (1=Styczeń, 12=Grudzień)')
+plt.tight_layout()
+plt.savefig('reports/sezonowosc_poziomu_wody/sezonowosc_wg_miesiecy')
