@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import os
+from scipy.stats import shapiro, mannwhitneyu
+from sklearn.linear_model import LinearRegression
 
 #METEOROLOGICZNE
 meteo_files = [f for f in os.listdir('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025') if f.endswith('.xlsx')]
@@ -52,6 +54,8 @@ full_meteo.index.name = 'Data'
 # kolumny pomocnicze
 full_meteo['Miesiąc'] = full_meteo.index.month
 full_meteo['Dzień'] = full_meteo.index.day
+
+# print(full_meteo.isna().sum())
 
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
 medians = full_meteo.groupby(['Miesiąc', 'Dzień']).transform('median')
@@ -167,6 +171,8 @@ full_water_level.index.name = 'Data'
 # kolumny pomocnicze
 full_water_level['Miesiąc'] = full_water_level.index.month
 full_water_level['Dzień'] = full_water_level.index.day
+
+# print(full_water_level.isna().sum())
 
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
 medians = full_water_level.groupby(['Miesiąc', 'Dzień']).transform('median')
@@ -355,3 +361,153 @@ axes[2].set_xlabel('Suma opadu (przedwczoraj) [mm]')
 plt.suptitle('Porównanie reakcji rzeki na opad z opóźnieniem', fontsize=16)
 plt.tight_layout()
 plt.savefig('reports/analiza_opoznien/scatter_opoznienia_panel.png', dpi=300)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~ANALIZA STATYSTYCZNA ZALEŻNOŚCI~~~~~~~~~~~~~~~~~~~~~
+korelacje = []
+
+for lag in range(15):
+    corr = final['Opad_suma'].shift(lag).corr(
+        final['Poziom_wody_max']
+    )
+    korelacje.append(corr)
+
+plt.figure(figsize=(10, 5))
+sns.lineplot(x=range(15), y=korelacje, marker='o', color='purple')
+plt.title('Korelacja między opadem a poziomem wody w zależności od opóźnienia (0-14 dni)', fontsize=14)
+plt.xlabel('Opóźnienie (dni)')
+plt.ylabel('Współczynnik korelacji (Pearson)')
+plt.tight_layout()
+plt.savefig('reports/analiza_opoznien/korelacja_opoznienia.png', dpi=300)
+
+#z wykresu korelacji opóźnienia widać że największy wpływ na poziom wody ma opad z tego samego dnia w którym mierzymy poziom
+#Później poziom korelacji spada aż do dnia 6, gdzie wyjątkowo jest wyższy niż w dniu 5.
+#Ogólnie poziom korelacji dla każdego dnia jest niski (poniżej 0.3), co sugeruje że opad jest tylko jednym z wielu 
+# czynników wpływających na poziom wody, a jego wpływ jest rozproszony w czasie i może być modulowany przez inne czynniki 
+# (np. nasycenie gleby, topografia, zarządzanie wodą). Może to także wskazywać na to na istnienie silnej korelacji nieliniowej, 
+# przy wartości r równej lub bliskiej 0
+
+
+cols = [
+    'Opad_suma',
+    'Opad_72h',
+    'Opad_7d',
+    'Temp_średnia',
+    'Wilgotność_średnia',
+    'Ciśnienie_średnia',
+    'Poziom_wody_max'
+]
+
+corr_matrix = final[cols].corr()
+
+plt.figure(figsize=(8,6))
+sns.heatmap(
+    corr_matrix,
+    annot=True,
+    cmap='coolwarm',
+    center=0
+)
+plt.title('Macierz korelacji')
+plt.savefig('reports/analiza_opoznien/macierz_korelacji', dpi=300)
+
+# Porównanie korelacji: wszystkie dni vs mokre dni
+print("=== Wszystkie dni ===")
+for col in ['Opad_suma', 'Opad_72h', 'Opad_7d', 'Opad_lag_1d', 'Opad_lag_2d', 'Opad_lag_3d']:
+    r = final[col].corr(final['Poziom_wody_max'])
+    print(f"{col:20s}  r = {r:.3f}")
+
+print("\n=== Tylko dni z opadem > 0 ===")
+mokre = final[final['Opad_suma'] > 0]
+for col in ['Opad_suma', 'Opad_72h', 'Opad_7d']:
+    r = mokre[col].corr(mokre['Poziom_wody_max'])
+    print(f"{col:20s}  r = {r:.3f}")
+
+# === Wszystkie dni ===
+# Opad_suma             r = 0.196
+# Opad_72h              r = 0.233
+# Opad_7d               r = 0.211
+# Opad_lag_1d           r = 0.152
+# Opad_lag_2d           r = 0.094
+# Opad_lag_3d           r = 0.070
+
+# === Tylko dni z opadem > 0 ===
+# Opad_suma             r = 0.120
+# Opad_72h              r = 0.177
+# Opad_7d               r = 0.164
+
+plt.figure(figsize=(8,6))
+
+sns.regplot(
+    data=final,
+    x='Opad_72h',
+    y='Poziom_wody_max',
+    scatter_kws={'alpha':0.3}
+)
+
+plt.title('Opad skumulowany 72h a maksymalny poziom wody')
+plt.xlabel('Opad 72h [mm]')
+plt.ylabel('Poziom wody max [m]')
+
+plt.savefig('reports/regplot_opad72h_woda.png', dpi=300)
+
+#porównanie rozkłdów
+q25 = final['Opad_suma'].quantile(0.25)
+q75 = final['Opad_suma'].quantile(0.75)
+
+maly_opad = final[final['Opad_suma'] <= q25]['Poziom_wody_max']
+duzy_opad = final[final['Opad_suma'] >= q75]['Poziom_wody_max']
+
+plt.figure(figsize=(10,6))
+sns.kdeplot(maly_opad, label='Mały opad (<= 25%)', fill=True, alpha=0.5)
+sns.kdeplot(duzy_opad, label='Duży opad (>= 75%)', fill=True, alpha=0.5)
+plt.title('Porównanie rozkładów poziomu wody przy małym i dużym opadzie')
+plt.xlabel('Maksymalny poziom wody [m]')
+plt.ylabel('Gęstość')
+plt.legend()
+plt.savefig('reports/kdeplot_opad_woda.png', dpi=300)
+
+porownanie = pd.DataFrame({
+    'Mały opad': maly_opad,
+    'Duży opad': duzy_opad
+})
+
+sns.boxplot(data=porownanie)
+plt.title('Porównanie rozkładów poziomu wody przy małym i dużym opadzie (boxplot)')
+plt.ylabel('Maksymalny poziom wody [m]')
+plt.savefig('reports/boxplot_opad_woda.png', dpi=300)
+
+#sprawdzenie normalności rozkładów
+stat, p = shapiro(maly_opad)
+print(p)
+
+stat, p = shapiro(duzy_opad)
+print(p)
+
+#9.51234775806283e-13 < 0.05
+#3.948999373313471e-09 < 0.05
+# oba rozkłady są dalekie od normalności, więc testujemy różnice testem nieparametrycznym
+stat, p = mannwhitneyu(maly_opad, duzy_opad)
+print(p)
+#4.639356621361877e-31 < 0.05
+# różnica między grupami jest statystycznie istotna, co sugeruje że poziom wody jest istotnie wyższy w dniach z 
+# dużym opadem w porównaniu do dni z małym opadem.
+
+# korelacja Spearmana (nieparametryczna) między opadem a poziomem wody by sprawdzić czy istnieje monotoniczna zależność, nawet jeśli nie jest liniowa
+print(final['Opad_suma'].corr(final['Poziom_wody_max'], method='spearman'))
+#0.287 - umiarkowana dodatnia korelacja monotoniczna, co sugeruje że wyższe wartości opadu są generalnie związane z wyższymi poziomami wody, ale z dużą zmiennością i innymi czynnikami wpływającymi na poziom wody.
+
+# korelacja Pearsona dla dni z opadem > 0, by sprawdzić liniową zależność tylko w dniach, gdy wystąpił opad
+mokre = final[final['Opad_suma'] > 0]
+print(mokre['Opad_suma'].corr(mokre['Poziom_wody_max'])) 
+#0.12 - słaba dodatnia korelacja liniowa między sumą opadu a poziomem wody w dniach, gdy wystąpił opad, co sugeruje że nawet w tych dniach opad jest tylko jednym z wielu czynników wpływających na poziom wody, a jego wpływ jest rozproszony i może być modulowany przez inne czynniki (np. nasycenie gleby, topografia, zarządzanie wodą).
+
+# regresja liniowa dla Opad_72h i Poziom_wody_max, by sprawdzić czy istnieje liniowa zależność i jaki jest jej współczynnik
+X = final[['Opad_72h']]
+y = final['Poziom_wody_max']
+model = LinearRegression()
+model.fit(X, y)
+print(model.coef_)
+# 0.00632912 - oznacza że każda dodatkowa jednostka opadu skumulowanego z ostatnich 72h jest związana ze średnim wzrostem 
+# maksymalnego poziomu wody o około 0.0063 metra, przy założeniu liniowej zależności i braku innych 
+# czynników zakłócających. Jednakże, biorąc pod uwagę niską korelację i rozproszenie danych, ten współczynnik 
+# powinien być interpretowany ostrożnie, ponieważ opad jest tylko jednym z wielu czynników wpływających na poziom wody.
