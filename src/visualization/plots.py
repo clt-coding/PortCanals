@@ -21,8 +21,8 @@ def plot_przebieg_dobowy(df):
 def plot_sezonowosc_pory_roku(df):
     """Generuje i zapisuje wykres pudełkowy poziomu wody z podziałem na pory roku."""
     plt.figure(figsize=(10, 6))
-    sns.boxplot(data=df, x='Pora_roku', y='Poziom_wody_średnia',
-                hue='Pora_roku', order=['wiosna', 'lato', 'jesien', 'zima'],
+    sns.boxplot(data=df, x='sezon', y='Poziom_wody_średnia',
+                hue='sezon', order=['wiosna', 'lato', 'jesien', 'zima'],
                 palette='pastel', legend=False)
     plt.title('Rozkład średniego dobowego poziomu wody w zależności od pory roku', fontsize=14)
     plt.ylabel('Średni poziom wody [m]')
@@ -35,8 +35,8 @@ def plot_sezonowosc_pory_roku(df):
 def plot_sezonowosc_miesiace(df):
     """Generuje i zapisuje wykres pudełkowy poziomu wody z podziałem na poszczególne miesiące."""
     plt.figure(figsize=(12, 6))
-    sns.boxplot(data=df, x='Miesiąc', y='Poziom_wody_średnia',
-                hue='Miesiąc', palette='Set3', legend=False)
+    sns.boxplot(data=df, x='month', y='Poziom_wody_średnia',
+                hue='month', palette='Set3', legend=False)
     plt.title('Rozkład średniego dobowego poziomu wody w poszczególnych miesiącach', fontsize=14)
     plt.ylabel('Średni poziom wody [m]')
     plt.xlabel('Miesiąc (1=Styczeń, 12=Grudzień)')
@@ -60,7 +60,7 @@ def plot_zaleznosc_opad_woda(df):
 def plot_zaleznosc_opad_woda_sezony(df):
     """Generuje wykres punktowy poziomu wody od opadu z kolorowaniem po porach roku."""
     plt.figure(figsize=(12, 7))
-    sns.scatterplot(data=df, x='Opad_72h', y='Poziom_wody_max', hue='Pora_roku',
+    sns.scatterplot(data=df, x='Opad_72h', y='Poziom_wody_max', hue='sezon',
                     palette='bright', alpha=0.7, s=60)
     plt.title('Zależność: Opad skumulowany a poziom wody w różnych porach roku', fontsize=14)
     plt.xlabel('Opad skumulowany z 3 dni [mm]')
@@ -74,7 +74,7 @@ def plot_zaleznosc_opad_woda_sezony(df):
 def plot_zaleznosc_cisnienie_woda(df):
     """Generuje wykres punktowy wpływu zmiany ciśnienia (proxy wiatru) na poziom wody."""
     plt.figure(figsize=(12, 7))
-    sns.scatterplot(data=df, x='Ciśnienie_delta_1d', y='Poziom_wody_max', hue='Pora_roku',
+    sns.scatterplot(data=df, x='Ciśnienie_delta_1d', y='Poziom_wody_max', hue='sezon',
                     palette='bright', alpha=0.7, s=60)
     plt.title('Wpływ zmiany ciśnienia (proxy wiatru/sztormu) na poziom wody', fontsize=14)
     plt.xlabel('Zmiana ciśnienia względem poprzedniego dnia [hPa] (Wartości ujemne = spadek/niż)')
