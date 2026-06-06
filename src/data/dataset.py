@@ -1,13 +1,17 @@
 import os
 import pandas as pd
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
+
 def build_meteo_dataframe():
-    meteo_files = [f for f in os.listdir('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025') if
+    folder = os.path.join(RAW_DIR, "dane-pogodowe-stacja-gora-gradowa-2021-2025")
+    meteo_files = [f for f in os.listdir(folder) if
                    f.endswith('.xlsx')]
     all_meteo = []
 
     for file in meteo_files:
-        path = os.path.join('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025', file)
+        path = os.path.join(folder, file)
         df = pd.read_excel(path, skipfooter=4)
         df = df.dropna(how='all')
         df.columns = df.columns.str.strip()
@@ -16,12 +20,13 @@ def build_meteo_dataframe():
     return pd.concat(all_meteo)
 
 def build_water_level_dataframe():
-    water_level_files = [f for f in os.listdir('data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025') if
+    folder = os.path.join(RAW_DIR, "poziom-wody-ujscie-rzeki-strzyza-2021-2025")
+    water_level_files = [f for f in os.listdir(folder) if
                          f.endswith('.xlsx')]
     all_water_level = []
 
     for file in water_level_files:
-        path = os.path.join('data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025', file)
+        path = os.path.join(folder, file)
         df = pd.read_excel(path, skipfooter=4, usecols=[0, 1])
         df = df.dropna(how='all')
         df.columns = df.columns.str.strip()
