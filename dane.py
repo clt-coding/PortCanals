@@ -3,6 +3,7 @@ import numpy as np
 import os
 from scipy.stats import shapiro, mannwhitneyu
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import confusion_matrix, precision_score, recall_score
 
 #METEOROLOGICZNE
 meteo_files = [f for f in os.listdir('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025') if f.endswith('.xlsx')]
@@ -511,3 +512,265 @@ print(model.coef_)
 # maksymalnego poziomu wody o około 0.0063 metra, przy założeniu liniowej zależności i braku innych 
 # czynników zakłócających. Jednakże, biorąc pod uwagę niską korelację i rozproszenie danych, ten współczynnik 
 # powinien być interpretowany ostrożnie, ponieważ opad jest tylko jednym z wielu czynników wpływających na poziom wody.
+
+# --------------------WALIDACJA I BENCHMARK--------------------------
+
+
+#----------------WALIDACJA I BENCHMARK-------------------
+threshold = final['Poziom_wody_max'].quantile(0.90)
+final['Epizod_rzeczywisty'] = (final['Poziom_wody_max'] >= threshold).astype(int)
+
+rain_threshold = final['Opad_72h'].quantile(0.90)
+final['Alarm'] = (final['Opad_72h'] >= rain_threshold).astype(int)
+
+from sklearn.metrics import confusion_matrix
+
+# confusion matrix
+cm = confusion_matrix(
+    final['Epizod_rzeczywisty'],
+    final['Alarm']
+)
+plt.figure(figsize=(6, 5))
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=['Brak alarmu', 'Alarm'],
+    yticklabels=['Brak epizodu', 'Epizod']
+)
+plt.title('Macierz pomyłek systemu alarmowego')
+plt.xlabel('Predykcja')
+plt.ylabel('Rzeczywistość')
+plt.tight_layout()
+plt.savefig('reports/walidacja/confusion_matrix.png',dpi=300)
+plt.show()
+
+# recall - jaki procent rzeczywistych momentów krytycznych został wykryty
+coverage = recall_score(
+    final['Epizod_rzeczywisty'],
+    final['Alarm']
+)
+print("Event coverage:", coverage)
+
+#precision - jaki procent alarmów był trafny
+precision = precision_score(
+    final['Epizod_rzeczywisty'],
+    final['Alarm']
+)
+print("Precision:", precision)
+
+#
+events = (
+    final['Epizod_rzeczywisty']
+    .ne(final['Epizod_rzeczywisty'].shift())
+    .cumsum()
+)
+
+events_real = (
+    final['Epizod_rzeczywisty']
+    .ne(final['Epizod_rzeczywisty'].shift())
+    .cumsum()
+)
+
+real_events = []
+
+for _, grp in final.groupby(events_real):
+    if grp['Epizod_rzeczywisty'].iloc[0] == 1:
+        real_events.append({
+            'start': grp.index.min(),
+            'end': grp.index.max(),
+            'peak_time': grp['Poziom_wody_max'].idxmax(),
+            'peak_value': grp['Poziom_wody_max'].max()
+        })
+
+events_alarm = (
+    final['Alarm']
+    .ne(final['Alarm'].shift())
+    .cumsum()
+)
+
+alarm_events = []
+
+for _, grp in final.groupby(events_alarm):
+    if grp['Alarm'].iloc[0] == 1:
+        alarm_events.append({
+            'start': grp.index.min(),
+            'end': grp.index.max(),
+            'peak_time': grp['Opad_72h'].idxmax(),
+            'peak_value': grp['Poziom_wody_max'].max()
+        })
+
+onset_errors = []
+offset_errors = []
+peak_timing_errors = []
+peak_height_errors = []
+# n = min(len(real_events), len(alarm_events))
+
+# for i in range(len(real_events)):
+#     onset_errors.append(
+#         (alarm_events[i]['start']
+#          - real_events[i]['start']).days
+#     )
+#     offset_errors.append(
+#         (alarm_events[i]['end']
+#          - real_events[i]['end']).days
+#     )
+
+# mean_onset = np.mean(np.abs(onset_errors))
+# mean_offset = np.mean(np.abs(offset_errors))
+
+# print("Średni onset error:", mean_onset)
+# print("Średni offset error:", mean_offset)
+
+# peak_timing_errors = []
+
+# for i in range(n):
+#     peak_timing_errors.append(abs((alarm_events[i]['peak_time'] - real_events[i]['peak_time']).days))
+
+# mean_peak_timing = np.mean(peak_timing_errors)
+# print("Peak timing error:", mean_peak_timing)
+
+# peak_height_errors = []
+# for i in range(n):
+#     peak_height_errors.append(
+#         abs(
+#             alarm_events[i]['peak_value']
+#             -
+#             real_events[i]['peak_value']
+#         )
+#     )
+# mean_peak_height = np.mean(peak_height_errors)
+# print("Peak height error:", mean_peak_height)
+
+# n = min(len(real_events), len(alarm_events))
+# print(f"real_events: {len(real_events)}, alarm_events: {len(alarm_events)}, n: {n}")
+
+# if n == 0:
+#     print("UWAGA: brak dopasowanych par epizodów – pomijam onset/offset/peak timing.")
+#     mean_onset = float('nan')
+#     mean_offset = float('nan')
+#     mean_peak_timing = float('nan')
+#     mean_peak_height = float('nan')
+# else:
+#     onset_errors = []
+#     offset_errors = []
+#     for i in range(n):
+#         onset_errors.append((alarm_events[i]['start'] - real_events[i]['start']).days)
+#         offset_errors.append((alarm_events[i]['end'] - real_events[i]['end']).days)
+#     mean_onset = np.mean(np.abs(onset_errors))
+#     mean_offset = np.mean(np.abs(offset_errors))
+
+#     peak_timing_errors = []
+#     for i in range(n):
+#         peak_timing_errors.append(abs((alarm_events[i]['peak_time'] - real_events[i]['peak_time']).days))
+#     mean_peak_timing = np.mean(peak_timing_errors)
+
+#     peak_height_errors = []
+#     for i in range(n):
+#         peak_height_errors.append(abs(alarm_events[i]['peak_value'] - real_events[i]['peak_value']))
+#     mean_peak_height = np.mean(peak_height_errors)
+
+for real in real_events:
+    # szukamy alarmu który nakłada się czasowo z rzeczywistym epizoderm
+    # lub zaczyna się w ciągu 7 dni przed/po
+    best_alarm = None
+    best_dist = float('inf')
+
+    for alarm in alarm_events:
+        overlap = (alarm['start'] <= real['end']) and (alarm['end'] >= real['start'])
+        dist = abs((alarm['start'] - real['start']).days)
+
+        if overlap or dist <= 7:
+            if dist < best_dist:
+                best_dist = dist
+                best_alarm = alarm
+
+    if best_alarm is not None:
+        onset_errors.append((best_alarm['start'] - real['start']).days)
+        offset_errors.append((best_alarm['end'] - real['end']).days)
+        peak_timing_errors.append(abs((best_alarm['peak_time'] - real['peak_time']).days))
+        peak_height_errors.append(abs(best_alarm['peak_value'] - real['peak_value']))
+
+n = len(onset_errors)
+if n == 0:
+    print("UWAGA: brak dopasowanych par – sprawdź dane wejściowe.")
+    mean_onset = float('nan')
+    mean_offset = float('nan')
+    mean_peak_timing = float('nan')
+    mean_peak_height = float('nan')
+else:
+    mean_onset = np.mean(np.abs(onset_errors))
+    mean_offset = np.mean(np.abs(offset_errors))
+    mean_peak_timing = np.mean(peak_timing_errors)
+    mean_peak_height = np.mean(peak_height_errors)
+
+print("Średni onset error:", mean_onset)
+print("Średni offset error:", mean_offset)
+print("Peak timing error:", mean_peak_timing)
+print("Peak height error:", mean_peak_height)
+# -----------------------------------------------------------------
+
+years = sorted(final.index.year.unique())
+year_results = []
+for year in years:
+    tmp = final[final.index.year == year]
+    rec = recall_score(
+        tmp['Epizod_rzeczywisty'],
+        tmp['Alarm']
+    )
+    prec = precision_score(
+        tmp['Epizod_rzeczywisty'],
+        tmp['Alarm'],
+        zero_division=0
+    )
+    year_results.append({
+        "Rok": year,
+        "Recall": rec,
+        "Precision": prec
+    })
+year_results = pd.DataFrame(year_results)
+print("\nStabilność rok-po-roku:")
+print(year_results)
+
+plt.figure(figsize=(8,5))
+plt.plot(
+    year_results['Rok'],
+    year_results['Recall'],
+    marker='o',
+    label='Recall'
+)
+plt.plot(
+    year_results['Rok'],
+    year_results['Precision'],
+    marker='o',
+    label='Precision'
+)
+plt.legend()
+plt.title('Stabilność systemu rok-po-roku')
+plt.savefig(
+    'reports/walidacja/stabilnosc_rok_po_roku.png',
+    dpi=300
+)
+
+season_results = []
+
+for season in ['wiosna','lato','jesien','zima']:
+    tmp = final[final['Pora_roku'] == season]
+    rec = recall_score(
+        tmp['Epizod_rzeczywisty'],
+        tmp['Alarm']
+    )
+    prec = precision_score(
+        tmp['Epizod_rzeczywisty'],
+        tmp['Alarm'],
+        zero_division=0
+    )
+    season_results.append({
+        'Sezon': season,
+        'Recall': rec,
+        'Precision': prec
+    })
+season_results = pd.DataFrame(season_results)
+print("\nStabilność sezonowa:")
+print(season_results)
