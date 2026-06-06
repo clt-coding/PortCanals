@@ -51,8 +51,8 @@ EPIZOD_PERCENTYL = 0.90
 # Parametry Random Forest
 RF_PARAMS = {
     'n_estimators':   300,
-    'max_depth':      6,       # ograniczamy głębokość — zapobiega overfitting na małych danych
-    'min_samples_leaf': 10,    # min. 10 dni w liściu — stabilność
+    'max_depth':      None,       # ograniczamy głębokość — zapobiega overfitting na małych danych
+    'min_samples_leaf': 15,    # min. 15 dni w liściu — stabilność
     'class_weight':  'balanced',  # wyrównuje nierównowagę klas (epizody ~10% danych)
     'random_state':   42,
     'n_jobs':        -1,
