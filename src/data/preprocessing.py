@@ -124,6 +124,9 @@ def add_meteo_engineered_features(df):
 def clean_water_level_and_day_step(df):
     df['Poziom wody [m]'] = df['Poziom wody [m]'].astype(str).str.replace(',', '.')
     df['Poziom wody [m]'] = pd.to_numeric(df['Poziom wody [m]'], errors='coerce')
+
+    df.loc[(df['Poziom wody [m]'] < -0.5) | (df['Poziom wody [m]'] > 2.0), 'Poziom wody [m]'] = np.nan
+
     df = df.dropna(subset=['Poziom wody [m]'])
 
     df["Data"] = pd.to_datetime(df["Data"])
