@@ -1,4 +1,5 @@
 import os
+from typing import final
 import pandas as pd
 import numpy as np
 
@@ -172,7 +173,7 @@ def build_main_df():
     if os.path.exists('data/processed/final.csv'):
         return pd.read_csv('data/processed/final.csv', index_col='Data', parse_dates=True)
 
-    from src.data.dataset import build_meteo_dataframe, build_water_level_dataframe
+    from dataset import build_meteo_dataframe, build_water_level_dataframe
 
     df_meteo_raw = build_meteo_dataframe()
     full_meteo = clean_meteo_and_day_step(df_meteo_raw)
@@ -195,4 +196,6 @@ def build_main_df():
 
     return final
 
-
+from ml_factor_system import uruchom_system
+diagnozy = uruchom_system(build_main_df())
+print(diagnozy)
