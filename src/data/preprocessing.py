@@ -92,17 +92,15 @@ def add_meteo_engineered_features(df):
     # spadek (–1)	    180°	    0.0	            –1.0
 
     # usunięcie NaN
-    df.iloc[0, df.columns.get_loc('Ciśnienie_delta_1d')] = 0
-    df.iloc[0, df.columns.get_loc('Ciśnienie_delta_2d')] = 0
-    df.iloc[0, df.columns.get_loc('Ciśnienie_delta_3d')] = 0
-    df.iloc[0, df.columns.get_loc('Wiatr_siła_proxy')] = 0
-    df.iloc[0, df.columns.get_loc('Wiatr_kierunek_proxy')] = 0
-    df.iloc[0, df.columns.get_loc('Wiatr_sektor_proxy')] = 0
-    df.iloc[0, df.columns.get_loc('Wiatr_kąt_proxy')] = 0
-    df.iloc[0, df.columns.get_loc('Wiatr_sin_proxy')] = 0
-    df.iloc[0, df.columns.get_loc('Wiatr_cos_proxy')] = 0
-    df.loc[df.index[1], ['Ciśnienie_delta_2d', 'Ciśnienie_delta_3d']] = 0
-    df.loc[df.index[2], ['Ciśnienie_delta_3d']] = 0
+    df['Ciśnienie_delta_1d'] = df['Ciśnienie_delta_1d'].fillna(0)
+    df['Ciśnienie_delta_2d'] = df['Ciśnienie_delta_2d'].fillna(0)
+    df['Ciśnienie_delta_3d'] = df['Ciśnienie_delta_3d'].fillna(0)
+    df['Wiatr_siła_proxy'] = df['Wiatr_siła_proxy'].fillna(0)
+    df['Wiatr_kierunek_proxy'] = df['Wiatr_kierunek_proxy'].fillna(0)
+    df['Wiatr_sektor_proxy'] = df['Wiatr_sektor_proxy'].fillna('stabilnie')
+    df['Wiatr_kąt_proxy'] = df['Wiatr_kąt_proxy'].fillna(90)
+    df['Wiatr_sin_proxy'] = df['Wiatr_sin_proxy'].fillna(0)
+    df['Wiatr_cos_proxy'] = df['Wiatr_cos_proxy'].fillna(0)
 
     for i in range(1, 4):
         df[f'Opad_lag_{i}d'] = df['Opad_suma'].shift(i)
@@ -185,6 +183,9 @@ def build_main_df():
     full_water = clean_water_level_and_day_step(df_water_raw)
     full_water = fix_missing_water_level(full_water)
     full_water = add_water_level_engineered_features(full_water)
+
+    cols_to_drop = ['month', 'sezon', 'doy', 'sin_doy', 'cos_doy']
+    full_water = full_water.drop(columns=cols_to_drop)
 
     final = full_meteo.join(full_water, how='inner')
 
