@@ -4,6 +4,8 @@
 import os
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
@@ -348,3 +350,14 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
     print(f"  Komunikat           : {diag['komunikat']}")
 
     return diagnozy
+
+if __name__ == "__main__":
+
+    final = pd.read_csv(
+        "../../data/processed/final.csv",
+        parse_dates=["Data"],
+        index_col="Data"
+    )
+
+    diagnozy = uruchom_system(final)
+    print(diagnozy.head())

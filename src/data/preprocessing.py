@@ -195,7 +195,3 @@ def build_main_df():
     print("Zapisano final.csv")
 
     return final
-
-from ml_factor_system import uruchom_system
-diagnozy = uruchom_system(build_main_df())
-print(diagnozy)
