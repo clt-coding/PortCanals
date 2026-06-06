@@ -513,6 +513,19 @@ print(model.coef_)
 # czynników zakłócających. Jednakże, biorąc pod uwagę niską korelację i rozproszenie danych, ten współczynnik 
 # powinien być interpretowany ostrożnie, ponieważ opad jest tylko jednym z wielu czynników wpływających na poziom wody.
 
+'''
+============================================
+
+
+        DO TEGO MOMENTU UPORZADKOWANE
+                !!!!!!!!!1
+            !!!!!!!!!!!!!!!!!!!
+
+
+
+===========================================
+'''
+
 # --------------------WALIDACJA I BENCHMARK--------------------------
 
 

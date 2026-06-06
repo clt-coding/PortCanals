@@ -2,10 +2,10 @@
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 
-
+#Generuje i zapisuje wykres liniowy przebiegu poziomu wody w czasie.
 def plot_przebieg_dobowy(df):
-    """Generuje i zapisuje wykres liniowy przebiegu poziomu wody w czasie."""
     plt.figure(figsize=(15, 5))
     plt.plot(df.index, df['Poziom_wody_średnia'], label='Średni dobowy poziom', color='teal', alpha=0.7)
     plt.plot(df.index, df['Poziom_wody_max'], label='Maksymalny dobowy poziom', color='red', alpha=0.5)
@@ -17,9 +17,8 @@ def plot_przebieg_dobowy(df):
 
     plt.show()
 
-
+#Generuje i zapisuje wykres pudełkowy poziomu wody z podziałem na pory roku.
 def plot_sezonowosc_pory_roku(df):
-    """Generuje i zapisuje wykres pudełkowy poziomu wody z podziałem na pory roku."""
     plt.figure(figsize=(10, 6))
     sns.boxplot(data=df, x='sezon', y='Poziom_wody_średnia',
                 hue='sezon', order=['wiosna', 'lato', 'jesien', 'zima'],
@@ -31,9 +30,8 @@ def plot_sezonowosc_pory_roku(df):
 
     plt.show()
 
-
+#Generuje i zapisuje wykres pudełkowy poziomu wody z podziałem na poszczególne miesiące.
 def plot_sezonowosc_miesiace(df):
-    """Generuje i zapisuje wykres pudełkowy poziomu wody z podziałem na poszczególne miesiące."""
     plt.figure(figsize=(12, 6))
     sns.boxplot(data=df, x='month', y='Poziom_wody_średnia',
                 hue='month', palette='Set3', legend=False)
@@ -44,9 +42,8 @@ def plot_sezonowosc_miesiace(df):
 
     plt.show()
 
-
+#Generuje wykres punktowy zależności poziomu wody od opadu (bez podziału na sezony).
 def plot_zaleznosc_opad_woda(df):
-    """Generuje wykres punktowy zależności poziomu wody od opadu (bez podziału na sezony)."""
     plt.figure(figsize=(10, 6))
     sns.scatterplot(data=df, x='Opad_72h', y='Poziom_wody_max', alpha=0.5, color='royalblue')
     plt.title('Zależność ogólna: Opad skumulowany (72h) a maksymalny poziom wody', fontsize=14)
@@ -56,9 +53,8 @@ def plot_zaleznosc_opad_woda(df):
 
     plt.show()
 
-
+#Generuje wykres punktowy poziomu wody od opadu z kolorowaniem po porach roku.
 def plot_zaleznosc_opad_woda_sezony(df):
-    """Generuje wykres punktowy poziomu wody od opadu z kolorowaniem po porach roku."""
     plt.figure(figsize=(12, 7))
     sns.scatterplot(data=df, x='Opad_72h', y='Poziom_wody_max', hue='sezon',
                     palette='bright', alpha=0.7, s=60)
@@ -70,9 +66,8 @@ def plot_zaleznosc_opad_woda_sezony(df):
 
     plt.show()
 
-
+#Generuje wykres punktowy wpływu zmiany ciśnienia (proxy wiatru) na poziom wody.
 def plot_zaleznosc_cisnienie_woda(df):
-    """Generuje wykres punktowy wpływu zmiany ciśnienia (proxy wiatru) na poziom wody."""
     plt.figure(figsize=(12, 7))
     sns.scatterplot(data=df, x='Ciśnienie_delta_1d', y='Poziom_wody_max', hue='sezon',
                     palette='bright', alpha=0.7, s=60)
@@ -85,8 +80,8 @@ def plot_zaleznosc_cisnienie_woda(df):
 
     plt.show()
 
+#Generuje wykres słupkowy korelacji opadów z poziomem wody w różnych opóźnieniach.
 def plot_korelacja_opoznien(df):
-    """Generuje wykres słupkowy korelacji opadów z poziomem wody w różnych opóźnieniach."""
     lagi_opadu = ['Opad_suma', 'Opad_lag_1d', 'Opad_lag_2d', 'Opad_lag_3d']
     korelacje = df[lagi_opadu].apply(lambda x: x.corr(df['Poziom_wody_max']))
     nazwy_lagow = ['W tym samym dniu', '1 dzień po', '2 dni po', '3 dni po']
@@ -100,8 +95,8 @@ def plot_korelacja_opoznien(df):
 
     plt.show()
 
+#Generuje panel trzech wykresów punktowych dla lagów opadowych (0, 1 i 2 dni).
 def plot_scatter_opoznienia(df):
-    """Generuje panel trzech wykresów punktowych dla lagów opadowych (0, 1 i 2 dni)."""
     fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
 
     sns.scatterplot(ax=axes[0], data=df, x='Opad_suma', y='Poziom_wody_max', alpha=0.5, color='blue')
@@ -128,3 +123,105 @@ def plot_scatter_opoznienia(df):
 # plot_zaleznosc_opad_woda(final)
 # plot_zaleznosc_opad_woda_sezony(final)
 # plot_zaleznosc_cisnienie_woda(final)
+
+
+#Wykres liniowy korelacji opadu z poziomem wody dla lagów 0-14 dni.
+def plot_korelacja_lag_14dni(df):
+    korelacje = []
+
+    for lag in range(15):
+        corr = df['Opad_suma'].shift(lag).corr(df['Poziom_wody_max'])
+        korelacje.append(corr)
+
+    plt.figure(figsize=(10, 5))
+    sns.lineplot(x=range(15), y=korelacje, marker='o', color='purple')
+    plt.title('Korelacja między opadem a poziomem wody w zależności od opóźnienia (0-14 dni)', fontsize=14)
+    plt.xlabel('Opóźnienie (dni)')
+    plt.ylabel('Współczynnik korelacji (Pearson)')
+    plt.tight_layout()
+    plt.show()
+
+
+#Heatmapa korelacji między zmiennymi meteorologicznymi a poziomem wody.
+def plot_macierz_korelacji(df):
+    cols = [
+        'Opad_suma',
+        'Opad_72h',
+        'Opad_7d',
+        'Temp_średnia',
+        'Wilgotność_średnia',
+        'Ciśnienie_średnia',
+        'Poziom_wody_max'
+    ]
+    corr_matrix = df[cols].corr()
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(
+        corr_matrix,
+        annot=True,
+        fmt='.2f',
+        cmap='coolwarm',
+        center=0
+    )
+    plt.title('Macierz korelacji',fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+
+#Wykres regresji liniowej Opad_72h vs poziom wody.
+def plot_regresja_opad_woda(df):
+    plt.figure(figsize=(10, 6))
+
+    sns.regplot(
+        data=df,
+        x='Opad_72h',
+        y='Poziom_wody_max',
+        scatter_kws={'alpha': 0.3}
+    )
+
+    plt.title('Opad skumulowany 72h a maksymalny poziom wody')
+    plt.xlabel('Opad 72h [mm]')
+    plt.ylabel('Poziom wody max [m]')
+
+    plt.tight_layout()
+    plt.show()
+
+#KDE rozkładu poziomu wody przy małym i dużym opadzie.
+def plot_kde_opad_grupy(df):
+    q25 = df['Opad_suma'].quantile(0.25)
+    q75 = df['Opad_suma'].quantile(0.75)
+
+    maly_opad = df[df['Opad_suma'] <= q25]['Poziom_wody_max']
+    duzy_opad = df[df['Opad_suma'] >= q75]['Poziom_wody_max']
+
+    plt.figure(figsize=(10, 6))
+    sns.kdeplot(maly_opad, label='Mały opad (<= 25%)', fill=True, alpha=0.4)
+    sns.kdeplot(duzy_opad, label='Duży opad (>= 75%)', fill=True, alpha=0.4)
+    plt.title('Porównanie rozkładów poziomu wody przy małym i dużym opadzie', fontsize=14)
+    plt.xlabel('Maksymalny poziom wody [m]')
+    plt.ylabel('Gęstość')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+#Boxplot poziomu wody przy małym i dużym opadzie.
+def plot_boxplot_opad_grupy(df):
+    q25 = df['Opad_suma'].quantile(0.25)
+    q75 = df['Opad_suma'].quantile(0.75)
+
+    maly_opad = df[df['Opad_suma'] <= q25]['Poziom_wody_max']
+    duzy_opad = df[df['Opad_suma'] >= q75]['Poziom_wody_max']
+
+    min_len = min(len(maly_opad), len(duzy_opad))
+
+    porownanie = pd.DataFrame({
+        'Mały opad (<= 25%)': maly_opad[:min_len],
+        'Duży opad (>= 75%)': duzy_opad[:min_len]
+    })
+
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(data=porownanie)
+    plt.title('Porównanie rozkładów poziomu wody przy małym i dużym opadzie')
+    plt.ylabel('Maksymalny poziom wody [m]')
+    plt.tight_layout()
+    plt.show()
