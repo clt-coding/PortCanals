@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import os
+from scipy.stats import shapiro, mannwhitneyu
+from sklearn.linear_model import LinearRegression
 
 #METEOROLOGICZNE
 meteo_files = [f for f in os.listdir('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025') if f.endswith('.xlsx')]
@@ -50,13 +52,15 @@ full_meteo = full_meteo.reindex(full_range_meteo)
 full_meteo.index.name = 'Data'
 
 # kolumny pomocnicze
-full_meteo['month'] = full_meteo.index.month
-full_meteo['day'] = full_meteo.index.day
+full_meteo['Miesiąc'] = full_meteo.index.month
+full_meteo['Dzień'] = full_meteo.index.day
+
+# print(full_meteo.isna().sum())
 
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
-medians = full_meteo.groupby(['month', 'day']).transform('median')
+medians = full_meteo.groupby(['Miesiąc', 'Dzień']).transform('median')
 full_meteo = full_meteo.fillna(medians)
-full_meteo = full_meteo.drop(columns=['day'])  # usunięcie kolumny pomocniczej
+full_meteo = full_meteo.drop(columns=['Dzień'])  # usunięcie kolumny pomocniczej
 
 print("Ilość dni po poprawkach w danych meteorologicznych:", len(full_meteo))
 print(full_meteo.head())
@@ -70,17 +74,17 @@ sezony = {
 
 #dodajemy kolumny:
 #sezon -> lato/jesien/zima/wiosna
-full_meteo['season'] = full_meteo['month'].map(sezony)
+full_meteo['Pora_roku'] = full_meteo['Miesiąc'].map(sezony)
 #nr dnia roku -> (1-365)
-full_meteo['doy'] = full_meteo.index.dayofyear
+full_meteo['Nr_dnia_roku'] = full_meteo.index.dayofyear
 #sin/cos doy -> zoobrazowuje odległość dni roku, względem jego cyckliczności
-full_meteo['sin_doy'] = np.sin(2 * np.pi * full_meteo['doy'] / 365)
-full_meteo['cos_doy'] = np.cos(2 * np.pi * full_meteo['doy'] / 365)
+full_meteo['Sin_nr_dnia_roku'] = np.sin(2 * np.pi * full_meteo['Nr_dnia_roku'] / 365)
+full_meteo['Cos_nr_dnia_roku'] = np.cos(2 * np.pi * full_meteo['Nr_dnia_roku'] / 365)
 
 #sprawdzenie
 print("\nMETEO:")
-print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].head())
-print(full_meteo[['month', 'season', 'sin_doy', 'cos_doy']].tail())
+print(full_meteo[['Miesiąc', 'Pora_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']].head())
+print(full_meteo[['Miesiąc', 'Pora_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']].tail())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # dodatkowe wartości ciśnienia
@@ -121,7 +125,7 @@ full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_2d')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Ciśnienie_delta_3d')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_siła_proxy')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_kierunek_proxy')] = 0
-full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_sektor_proxy')] = 0
+full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_sektor_proxy')] = 'stabilnie'
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_kąt_proxy')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_sin_proxy')] = 0
 full_meteo.iloc[0, full_meteo.columns.get_loc('Wiatr_cos_proxy')] = 0
@@ -142,7 +146,7 @@ for file in water_level_files:
     df['Poziom wody [m]'] = df['Poziom wody [m]'].astype(str).str.replace(',', '.')
     df['Poziom wody [m]'] = pd.to_numeric(df['Poziom wody [m]'], errors='coerce')
 
-    # df.loc[(df[nazwa_kolumny] < -10) | (df[nazwa_kolumny] > 10), nazwa_kolumny] = np.nan
+    df.loc[(df['Poziom wody [m]'] < -0.5) | (df['Poziom wody [m]'] > 2.0), 'Poziom wody [m]'] = np.nan
 
     df = df.dropna(subset=['Poziom wody [m]'])
 
@@ -165,13 +169,15 @@ full_water_level = full_water_level.reindex(full_range_wl)
 full_water_level.index.name = 'Data'
 
 # kolumny pomocnicze
-full_water_level['month'] = full_water_level.index.month
-full_water_level['day'] = full_water_level.index.day
+full_water_level['Miesiąc'] = full_water_level.index.month
+full_water_level['Dzień'] = full_water_level.index.day
+
+# print(full_water_level.isna().sum())
 
 # mediana dla każdego dnia w roku (np. mediana ze wszystkich 15 lipca)
-medians = full_water_level.groupby(['month', 'day']).transform('median')
+medians = full_water_level.groupby(['Miesiąc', 'Dzień']).transform('median')
 full_water_level = full_water_level.fillna(medians)
-full_water_level = full_water_level.drop(columns=['day'])  # usunięcie kolumny pomocniczej
+full_water_level = full_water_level.drop(columns=['Dzień'])  # usunięcie kolumny pomocniczej
 
 print("Ilość dni po poprawkach w danych poziomu wody:", len(full_water_level))
 print(full_water_level.head())
@@ -197,34 +203,311 @@ print(full_meteo[[ 'Opad_suma', 'Opad_lag_1d', 'Opad_lag_2d']].head())
 
 #dodajemy kolumny:
 #sezon -> lato/jesien/zima/wiosna
-full_water_level['season'] = full_water_level['month'].map(sezony)
+full_water_level['Pora_roku'] = full_water_level['Miesiąc'].map(sezony)
 #nr dnia roku -> (1-365)
-full_water_level['doy'] = full_water_level.index.dayofyear
+full_water_level['Nr_dnia_roku'] = full_water_level.index.dayofyear
 #sin/cos doy -> zoobrazowuje odległość dni roku, względem jego cyckliczności
-full_water_level['sin_doy'] = np.sin(2 * np.pi * full_water_level['doy'] / 365)
-full_water_level['cos_doy'] = np.cos(2 * np.pi * full_water_level['doy'] / 365)
+full_water_level['Sin_nr_dnia_roku'] = np.sin(2 * np.pi * full_water_level['Nr_dnia_roku'] / 365)
+full_water_level['Cos_nr_dnia_roku'] = np.cos(2 * np.pi * full_water_level['Nr_dnia_roku'] / 365)
 
 #sprawdzenie
 print("\nPOZIOM WODY:")
-print(full_water_level[['month', 'season', 'sin_doy', 'cos_doy']].head())
-print(full_water_level[['month', 'season', 'sin_doy', 'cos_doy']].tail())
+print(full_water_level[['Miesiąc', 'Pora_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']].head())
+print(full_water_level[['Miesiąc', 'Pora_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']].tail())
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# połączenie w jeden database
-final = full_meteo.join(full_water_level, how='inner')
-
-# wyświetlanie wszystkich kolumn
-# pd.set_option('display.max_columns', None)
-# pd.set_option('display.width', None)~
-
-print(final)
 # Opady skumulowane jako proxy nasycenia zlewni
 
-# Window=1 to 24h, Window=3 to 72h, Window=7 to 7 dni
+# 24h to Opad_suma, Window=3 to 72h, Window=7 to 7 dni
 # rolling - patrzy na obecny dzień oraz dwa dni poprzednie
-full_meteo['Opad_24h'] = full_meteo['Opad_suma'].rolling(window=1).sum()
 full_meteo['Opad_72h'] = full_meteo['Opad_suma'].rolling(window=3).sum()
 full_meteo['Opad_7d'] = full_meteo['Opad_suma'].rolling(window=7).sum()
 
 full_meteo[['Opad_72h', 'Opad_7d']] = full_meteo[['Opad_72h', 'Opad_7d']].bfill()
 print("Nowe kolumny nasycenia:")
-print(full_meteo[['Opad_suma', 'Opad_24h', 'Opad_72h', 'Opad_7d']].head(10))
+print(full_meteo[['Opad_suma', 'Opad_72h', 'Opad_7d']].head(10))
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+# połączenie w jeden database, usuwamy zduplikowane kolumny z poziomu wody przed połączeniem
+kolumny_do_usuniecia = ['Miesiąc', 'Pora_roku', 'Nr_dnia_roku', 'Sin_nr_dnia_roku', 'Cos_nr_dnia_roku']
+final = full_meteo.join(full_water_level.drop(columns=kolumny_do_usuniecia), how='inner')
+
+# wyświetlanie wszystkich kolumn
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+
+print(final)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ WIZUALIZACJE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ~~~~~~~~~~~~ SEZONOWOŚĆ ~~~~~~~~~~~~~~~
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Ustawienie estetycznego stylu dla wykresów
+sns.set_theme(style="whitegrid")
+
+
+# PRZEBIEG POZIOMU WODY W CZASIE (DOBOWO)
+plt.figure(figsize=(15, 5))
+plt.plot(final.index, final['Poziom_wody_średnia'], label='Średni dobowy poziom', color='teal', alpha=0.7)
+plt.plot(final.index, final['Poziom_wody_max'], label='Maksymalny dobowy poziom', color='red', alpha=0.5)
+plt.title('Przebieg poziomu wody na rzece Strzyża w latach 2021-2025', fontsize=14)
+plt.ylabel('Poziom wody [m]')
+plt.xlabel('Data')
+plt.legend()
+plt.tight_layout()
+plt.savefig('reports/sezonowosc_poziomu_wody/przebieg_poziomu_wody_dobowo', dpi=300)
+
+
+# SEZONOWOŚĆ WEDŁUG PÓR ROKU (BOXPLOT)
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=final, x='Pora_roku', y='Poziom_wody_średnia',
+            hue='Pora_roku', order=['wiosna', 'lato', 'jesien', 'zima'],
+            palette='pastel', legend=False)
+plt.title('Rozkład średniego dobowego poziomu wody w zależności od pory roku', fontsize=14)
+plt.ylabel('Średni poziom wody [m]')
+plt.xlabel('Pora roku')
+plt.tight_layout()
+plt.savefig('reports/sezonowosc_poziomu_wody/sezonowosc_wg_por_roku', dpi=300)
+
+
+# SEZONOWOŚĆ WEDŁUG MIESIĘCY (BOXPLOT)
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=final, x='Miesiąc', y='Poziom_wody_średnia',
+            hue='Miesiąc', palette='Set3', legend=False)
+plt.title('Rozkład średniego dobowego poziomu wody w poszczególnych miesiącach', fontsize=14)
+plt.ylabel('Średni poziom wody [m]')
+plt.xlabel('Miesiąc (1=Styczeń, 12=Grudzień)')
+plt.tight_layout()
+plt.savefig('reports/sezonowosc_poziomu_wody/sezonowosc_wg_miesiecy', dpi=300)
+
+
+# ~~~~~~~~~~~~ ZALEŻNOŚCI ~~~~~~~~~~~~~~~
+
+# ZALEŻNOŚCI METEO - POZIOM WODY (OGÓLNIE)
+plt.figure(figsize=(10, 6))
+# Używamy Opad_72h jako proxy nasycenia ziemi i sumy deszczu
+sns.scatterplot(data=final, x='Opad_72h', y='Poziom_wody_max', alpha=0.5, color='royalblue')
+plt.title('Zależność ogólna: Opad skumulowany (72h) a maksymalny poziom wody', fontsize=14)
+plt.xlabel('Opad skumulowany z 3 dni [mm]')
+plt.ylabel('Maksymalny dobowy poziom wody [m]')
+plt.tight_layout()
+plt.savefig('reports/zaleznosci_poziom_wody/zaleznosc_opad_woda_ogolnie.png', dpi=300)
+
+
+# ZALEŻNOŚCI METEO - POZIOM WODY (Z PODZIAŁEM NA SEZONY)
+plt.figure(figsize=(12, 7))
+sns.scatterplot(data=final, x='Opad_72h', y='Poziom_wody_max', hue='Pora_roku',
+                palette='bright', alpha=0.7, s=60)
+plt.title('Zależność: Opad skumulowany a poziom wody w różnych porach roku', fontsize=14)
+plt.xlabel('Opad skumulowany z 3 dni [mm]')
+plt.ylabel('Maksymalny dobowy poziom wody [m]')
+plt.legend(title='Pora roku')
+plt.tight_layout()
+plt.savefig('reports/zaleznosci_poziom_wody/zaleznosc_opad_woda_sezony.png', dpi=300)
+
+
+# ZALEŻNOŚĆ CIŚNIENIA (PROXY WIATRU/COFKI) A POZIOM WODY
+plt.figure(figsize=(12, 7))
+sns.scatterplot(data=final, x='Ciśnienie_delta_1d', y='Poziom_wody_max', hue='Pora_roku',
+                palette='bright', alpha=0.7, s=60)
+plt.title('Wpływ zmiany ciśnienia (proxy wiatru/sztormu) na poziom wody', fontsize=14)
+plt.xlabel('Zmiana ciśnienia względem poprzedniego dnia [hPa] (Wartości ujemne = spadek/niż)')
+plt.ylabel('Maksymalny dobowy poziom wody [m]')
+plt.axvline(0, color='grey', linestyle='--') # Linia oddzielająca spadki od wzrostów ciśnienia
+plt.legend(title='Pora roku')
+plt.tight_layout()
+plt.savefig('reports/zaleznosci_poziom_wody/zaleznosc_cisnienie_woda_sezony.png', dpi=300)
+
+# ~~~~~~~~~~~~ ANALIZA OPÓŹNIEŃ ~~~~~~~~~~~~~~~
+
+# ANALIZA OPÓŹNIEŃ (KORELACJA Z LAGAMI)
+# Obliczamy korelację między maksymalnym poziomem wody a opadami z różnych dni
+lagi_opadu = ['Opad_suma', 'Opad_lag_1d', 'Opad_lag_2d', 'Opad_lag_3d']
+korelacje = final[lagi_opadu].apply(lambda x: x.corr(final['Poziom_wody_max']))
+nazwy_lagow = ['W tym samym dniu', '1 dzień po', '2 dni po', '3 dni po']
+
+plt.figure(figsize=(8, 5))
+sns.barplot(x=nazwy_lagow, y=korelacje.values, hue=nazwy_lagow, palette='viridis', legend=False)
+plt.title('Korelacja między opadem a poziomem wody w zależności od opóźnienia', fontsize=14)
+plt.ylabel('Współczynnik korelacji (Pearson)')
+plt.xlabel('Czas reakcji na opad')
+plt.tight_layout()
+plt.savefig('reports/analiza_opoznien/korelacja_opoznien_slupki.png', dpi=300)
+
+# ANALIZA OPÓŹNIEŃ (WYKRESY PUNKTOWE)
+fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
+
+# Dzień zero
+sns.scatterplot(ax=axes[0], data=final, x='Opad_suma', y='Poziom_wody_max', alpha=0.5, color='blue')
+axes[0].set_title('Opad w tym samym dniu')
+axes[0].set_xlabel('Suma opadu [mm]')
+axes[0].set_ylabel('Maksymalny dobowy poziom wody [m]')
+
+# 1 dzień opóźnienia
+sns.scatterplot(ax=axes[1], data=final, x='Opad_lag_1d', y='Poziom_wody_max', alpha=0.5, color='orange')
+axes[1].set_title('1 dzień po opadzie')
+axes[1].set_xlabel('Suma opadu (wczoraj) [mm]')
+
+# 2 dni opóźnienia
+sns.scatterplot(ax=axes[2], data=final, x='Opad_lag_2d', y='Poziom_wody_max', alpha=0.5, color='green')
+axes[2].set_title('2 dni po opadzie')
+axes[2].set_xlabel('Suma opadu (przedwczoraj) [mm]')
+
+plt.suptitle('Porównanie reakcji rzeki na opad z opóźnieniem', fontsize=16)
+plt.tight_layout()
+plt.savefig('reports/analiza_opoznien/scatter_opoznienia_panel.png', dpi=300)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~ANALIZA STATYSTYCZNA ZALEŻNOŚCI~~~~~~~~~~~~~~~~~~~~~
+korelacje = []
+
+for lag in range(15):
+    corr = final['Opad_suma'].shift(lag).corr(
+        final['Poziom_wody_max']
+    )
+    korelacje.append(corr)
+
+plt.figure(figsize=(10, 5))
+sns.lineplot(x=range(15), y=korelacje, marker='o', color='purple')
+plt.title('Korelacja między opadem a poziomem wody w zależności od opóźnienia (0-14 dni)', fontsize=14)
+plt.xlabel('Opóźnienie (dni)')
+plt.ylabel('Współczynnik korelacji (Pearson)')
+plt.tight_layout()
+plt.savefig('reports/analiza_opoznien/korelacja_opoznienia.png', dpi=300)
+
+#z wykresu korelacji opóźnienia widać że największy wpływ na poziom wody ma opad z tego samego dnia w którym mierzymy poziom
+#Później poziom korelacji spada aż do dnia 6, gdzie wyjątkowo jest wyższy niż w dniu 5.
+#Ogólnie poziom korelacji dla każdego dnia jest niski (poniżej 0.3), co sugeruje że opad jest tylko jednym z wielu 
+# czynników wpływających na poziom wody, a jego wpływ jest rozproszony w czasie i może być modulowany przez inne czynniki 
+# (np. nasycenie gleby, topografia, zarządzanie wodą). Może to także wskazywać na to na istnienie silnej korelacji nieliniowej, 
+# przy wartości r równej lub bliskiej 0
+
+
+cols = [
+    'Opad_suma',
+    'Opad_72h',
+    'Opad_7d',
+    'Temp_średnia',
+    'Wilgotność_średnia',
+    'Ciśnienie_średnia',
+    'Poziom_wody_max'
+]
+
+corr_matrix = final[cols].corr()
+
+plt.figure(figsize=(8,6))
+sns.heatmap(
+    corr_matrix,
+    annot=True,
+    cmap='coolwarm',
+    center=0
+)
+plt.title('Macierz korelacji')
+plt.savefig('reports/analiza_opoznien/macierz_korelacji', dpi=300)
+
+# Porównanie korelacji: wszystkie dni vs mokre dni
+print("=== Wszystkie dni ===")
+for col in ['Opad_suma', 'Opad_72h', 'Opad_7d', 'Opad_lag_1d', 'Opad_lag_2d', 'Opad_lag_3d']:
+    r = final[col].corr(final['Poziom_wody_max'])
+    print(f"{col:20s}  r = {r:.3f}")
+
+print("\n=== Tylko dni z opadem > 0 ===")
+mokre = final[final['Opad_suma'] > 0]
+for col in ['Opad_suma', 'Opad_72h', 'Opad_7d']:
+    r = mokre[col].corr(mokre['Poziom_wody_max'])
+    print(f"{col:20s}  r = {r:.3f}")
+
+# === Wszystkie dni ===
+# Opad_suma             r = 0.196
+# Opad_72h              r = 0.233
+# Opad_7d               r = 0.211
+# Opad_lag_1d           r = 0.152
+# Opad_lag_2d           r = 0.094
+# Opad_lag_3d           r = 0.070
+
+# === Tylko dni z opadem > 0 ===
+# Opad_suma             r = 0.120
+# Opad_72h              r = 0.177
+# Opad_7d               r = 0.164
+
+plt.figure(figsize=(8,6))
+
+sns.regplot(
+    data=final,
+    x='Opad_72h',
+    y='Poziom_wody_max',
+    scatter_kws={'alpha':0.3}
+)
+
+plt.title('Opad skumulowany 72h a maksymalny poziom wody')
+plt.xlabel('Opad 72h [mm]')
+plt.ylabel('Poziom wody max [m]')
+
+plt.savefig('reports/regplot_opad72h_woda.png', dpi=300)
+
+#porównanie rozkłdów
+q25 = final['Opad_suma'].quantile(0.25)
+q75 = final['Opad_suma'].quantile(0.75)
+
+maly_opad = final[final['Opad_suma'] <= q25]['Poziom_wody_max']
+duzy_opad = final[final['Opad_suma'] >= q75]['Poziom_wody_max']
+
+plt.figure(figsize=(10,6))
+sns.kdeplot(maly_opad, label='Mały opad (<= 25%)', fill=True, alpha=0.5)
+sns.kdeplot(duzy_opad, label='Duży opad (>= 75%)', fill=True, alpha=0.5)
+plt.title('Porównanie rozkładów poziomu wody przy małym i dużym opadzie')
+plt.xlabel('Maksymalny poziom wody [m]')
+plt.ylabel('Gęstość')
+plt.legend()
+plt.savefig('reports/kdeplot_opad_woda.png', dpi=300)
+
+porownanie = pd.DataFrame({
+    'Mały opad': maly_opad,
+    'Duży opad': duzy_opad
+})
+
+sns.boxplot(data=porownanie)
+plt.title('Porównanie rozkładów poziomu wody przy małym i dużym opadzie (boxplot)')
+plt.ylabel('Maksymalny poziom wody [m]')
+plt.savefig('reports/boxplot_opad_woda.png', dpi=300)
+
+#sprawdzenie normalności rozkładów
+stat, p = shapiro(maly_opad)
+print(p)
+
+stat, p = shapiro(duzy_opad)
+print(p)
+
+#9.51234775806283e-13 < 0.05
+#3.948999373313471e-09 < 0.05
+# oba rozkłady są dalekie od normalności, więc testujemy różnice testem nieparametrycznym
+stat, p = mannwhitneyu(maly_opad, duzy_opad)
+print(p)
+#4.639356621361877e-31 < 0.05
+# różnica między grupami jest statystycznie istotna, co sugeruje że poziom wody jest istotnie wyższy w dniach z 
+# dużym opadem w porównaniu do dni z małym opadem.
+
+# korelacja Spearmana (nieparametryczna) między opadem a poziomem wody by sprawdzić czy istnieje monotoniczna zależność, nawet jeśli nie jest liniowa
+print(final['Opad_suma'].corr(final['Poziom_wody_max'], method='spearman'))
+#0.287 - umiarkowana dodatnia korelacja monotoniczna, co sugeruje że wyższe wartości opadu są generalnie związane z wyższymi poziomami wody, ale z dużą zmiennością i innymi czynnikami wpływającymi na poziom wody.
+
+# korelacja Pearsona dla dni z opadem > 0, by sprawdzić liniową zależność tylko w dniach, gdy wystąpił opad
+mokre = final[final['Opad_suma'] > 0]
+print(mokre['Opad_suma'].corr(mokre['Poziom_wody_max'])) 
+#0.12 - słaba dodatnia korelacja liniowa między sumą opadu a poziomem wody w dniach, gdy wystąpił opad, co sugeruje że nawet w tych dniach opad jest tylko jednym z wielu czynników wpływających na poziom wody, a jego wpływ jest rozproszony i może być modulowany przez inne czynniki (np. nasycenie gleby, topografia, zarządzanie wodą).
+
+# regresja liniowa dla Opad_72h i Poziom_wody_max, by sprawdzić czy istnieje liniowa zależność i jaki jest jej współczynnik
+X = final[['Opad_72h']]
+y = final['Poziom_wody_max']
+model = LinearRegression()
+model.fit(X, y)
+print(model.coef_)
+# 0.00632912 - oznacza że każda dodatkowa jednostka opadu skumulowanego z ostatnich 72h jest związana ze średnim wzrostem 
+# maksymalnego poziomu wody o około 0.0063 metra, przy założeniu liniowej zależności i braku innych 
+# czynników zakłócających. Jednakże, biorąc pod uwagę niską korelację i rozproszenie danych, ten współczynnik 
+# powinien być interpretowany ostrożnie, ponieważ opad jest tylko jednym z wielu czynników wpływających na poziom wody.
