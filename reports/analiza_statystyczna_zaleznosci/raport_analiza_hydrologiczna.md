@@ -90,7 +90,7 @@ Najsilniejszym predyktorem liniowym pozostaje `Opad_72h` (r = 0,233), co potwier
 
 ---
 
-### 2.4 Korelacja Spearmana
+### 2.5 Korelacja Spearmana
 
 | Stacja        | Spearman ρ | Pearson r | Różnica |
 | ------------- | ---------- | --------- | ------- |
@@ -102,7 +102,7 @@ We wszystkich stacjach korelacja Spearmana jest wyższa od Pearsona. Różnica j
 
 ---
 
-### 2.5 Regresja liniowa — Opad 72h vs. poziom wody
+### 2.6 Regresja liniowa — Opad 72h vs. poziom wody
 
 ![Regplot Martwa Wisła](regplot_opad72h_martwa_wisla.png)
 ![Regplot Port Północny](regplot_opad72h_port_pólnocny.png)
