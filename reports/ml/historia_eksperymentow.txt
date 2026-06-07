@@ -1,5 +1,5 @@
 
---- EKSPERYMENT: 2026-06-07 17:33:22 ---
+--- EKSPERYMENT: 2026-06-07 18:23:08 ---
 PROB_THRESHOLD: 0.5
 Średnie F1 (walidacja): 0.487
 Finalne Precision: 0.581

@@ -1,0 +1,2 @@
+col_poziom,n_dni_epizodow,n_dni_poza,MAE_w_epizodzie,RMSE_w_epizodzie,MAE_poza_epizodem,RMSE_poza_epizodem,uwaga
+Poziom_wody_max,180,1646,0.3046,0.3572,0.2937,0.3387,Metryki regresyjne oparte na skalowanym P(epizod) jako proxy dla poziomu wody. Dla prawdziwej regresji dodaj moduł regresyjny RF.

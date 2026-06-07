@@ -355,7 +355,7 @@ def _wykres_epizody_per_stacja(df: pd.DataFrame):
             roczne[nazwa] = df.groupby(df.index.year)[col].sum()
     if not roczne:
         return
-    roczne['Łącznie (≥2)'] = df.groupby(df.index.year)['Epizod_rzeczywisty'].sum()
+    roczne['Łącznie (>= 2)'] = df.groupby(df.index.year)['Epizod_rzeczywisty'].sum()
     plot_df = pd.DataFrame(roczne)
     ax = plot_df.plot(kind='bar', figsize=(12, 5), colormap='tab10')
     ax.set_title(f'Liczba epizodów p{int(EPIZOD_PERCENTYL*100)} per stacja i rok')
@@ -390,8 +390,13 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
         col_epizod = f'Epizod_{nazwa}'
         prog = df[f'Prog_{nazwa}'].iloc[0]
         n = int(df[col_epizod].sum())
+<<<<<<< HEAD
         print(f"  {nazwa:20s}: próg={prog:.3f}, epizodow={n} ({100*n/len(df):.1f}%)")
     print(f"  {'Lacznie ( >= 2 stacji)':20s}: epizodow={int(y.sum())} ({100*y.mean():.1f}%)")
+=======
+        print(f"  {nazwa:20s}: próg={prog:.3f}, epizodów={n} ({100*n/len(df):.1f}%)")
+    print(f"  {'Łącznie (>= 2 stacji)':20s}: epizodów={int(y.sum())} ({100*y.mean():.1f}%)")
+>>>>>>> walidacja
 
     # Walidacja czasowa z rolling threshold
     wyniki_walidacji = walidacja_czasowa(final)
