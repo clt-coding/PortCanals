@@ -588,7 +588,7 @@ def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
 
 if __name__ == "__main__":
     final = pd.read_csv(
-        "../../data/processed/final.csv",
+        "data/processed/final.csv",
         parse_dates=["Data"],
         index_col="Data",
     )

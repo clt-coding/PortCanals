@@ -390,13 +390,8 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
         col_epizod = f'Epizod_{nazwa}'
         prog = df[f'Prog_{nazwa}'].iloc[0]
         n = int(df[col_epizod].sum())
-<<<<<<< HEAD
-        print(f"  {nazwa:20s}: próg={prog:.3f}, epizodow={n} ({100*n/len(df):.1f}%)")
-    print(f"  {'Lacznie ( >= 2 stacji)':20s}: epizodow={int(y.sum())} ({100*y.mean():.1f}%)")
-=======
         print(f"  {nazwa:20s}: próg={prog:.3f}, epizodów={n} ({100*n/len(df):.1f}%)")
     print(f"  {'Łącznie (>= 2 stacji)':20s}: epizodów={int(y.sum())} ({100*y.mean():.1f}%)")
->>>>>>> walidacja
 
     # Walidacja czasowa z rolling threshold
     wyniki_walidacji = walidacja_czasowa(final)

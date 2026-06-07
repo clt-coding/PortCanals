@@ -1,4 +1,4 @@
-# 7. Benchmark i metryki walidacyjne
+# 7. Benchmark i metryki walidacyjne modelu ml
 
 ## Cel walidacji
 Celem walidacji było określenie skuteczności modelu w wykrywaniu epizodów wysokiej wody oraz ocena stabilności jego działania w czasie. Analizie poddano zarówno zdolność identyfikacji samych zdarzeń, jak i dokładność odwzorowania ich przebiegu oraz wartości poziomu wody.
@@ -43,7 +43,7 @@ Model wykrył **85% wszystkich rzeczywistych wezbrań**, co świadczy o wysokiej
 ---
 
 ## 7.3. Fałszywe alarmy (False Alarm Rate)
-Ocena liczby błędnie wygenerowanych alarmów.
+Metryka ta pozwala ocenić liczbę błędnych alarmów generowanych przez model.
 
 ### Poziom dzienny
 
@@ -98,7 +98,7 @@ Ocena dokładności odwzorowania poziomu wody dla części regresyjnej modelu.
 | RMSE    | 0,3387  |
 
 Wnioski:
-Wartości błędów dla okresów wezbrań i okresów spokojnych są bardzo zbliżone. Oznacza to, że model zachowuje podobny poziom dokładności niezależnie od sytuacji hydrologicznej i nie wykazuje znaczącego pogorszenia jakości podczas epizodów wysokiej wody.
+* Wartości błędów dla okresów wezbrań i okresów spokojnych są bardzo zbliżone. Oznacza to, że model zachowuje podobny poziom dokładności niezależnie od sytuacji hydrologicznej i nie wykazuje znaczącego pogorszenia jakości podczas epizodów wysokiej wody.
 
 ## 7.6. Stabilność sezonowa
 
@@ -129,9 +129,11 @@ Należy również zauważyć, że sezon letni charakteryzuje się bardzo wysoką
 Interpretacja:
 Model zachowuje względnie stabilne działanie w kolejnych latach. Średni recall wynosi blisko 90%, co oznacza, że większość zdarzeń jest wykrywana niezależnie od roku. Najwyższą jakość klasyfikacji odnotowano w 2022 roku (F1 = 0,825), natomiast największy spadek skuteczności wystąpił w 2025 roku.
 
+## 7.8. Ocena stabilności wyników w czasie
+
 Różnice pomiędzy latami nie wskazują jednak na systematyczną degradację modelu, dlatego można uznać jego działanie za stabilne czasowo.
 
-## 7.8. Wnioski
+## 7.9. Wnioski
 
 Przeprowadzona walidacja wskazuje, że model skutecznie identyfikuje epizody wysokiej wody i osiąga wysokie pokrycie zdarzeń (Event Recall = 0,85). Szczególnie dobrze radzi sobie z wykrywaniem wezbrań zimowych oraz z określaniem momentu wystąpienia maksimum poziomu wody.
 
