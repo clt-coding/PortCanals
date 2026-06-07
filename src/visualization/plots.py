@@ -124,104 +124,192 @@ def plot_scatter_opoznienia(df):
 # plot_zaleznosc_opad_woda_sezony(final)
 # plot_zaleznosc_cisnienie_woda(final)
 
+STACJE = {
+    'Strzyża':       'Poziom_wody_max',
+    'Martwa Wisła':  'Martwa_Wisla_max',
+    'Port Północny': 'Port_Polnocny_max',
+}
 
-#Wykres liniowy korelacji opadu z poziomem wody dla lagów 0-14 dni.
-def plot_korelacja_lag_14dni(df):
-    korelacje = []
 
+# Wykres liniowy korelacji opadu z poziomem wody dla lagów 0-14 dni
+# dla wszystkich trzech stacji jednocześnie
+def plot_korelacja_lag_14dni_wszystkie(df):
+    korelacje = {nazwa: [] for nazwa in STACJE}
+    markers = {'Strzyża': 'o', 'Martwa Wisła': 's', 'Port Północny': '^'}
     for lag in range(15):
-        corr = df['Opad_suma'].shift(lag).corr(df['Poziom_wody_max'])
-        korelacje.append(corr)
+        opad_shifted = df['Opad_suma'].shift(lag)
+        for nazwa, col in STACJE.items():
+            korelacje[nazwa].append(opad_shifted.corr(df[col]))
 
     plt.figure(figsize=(10, 5))
-    sns.lineplot(x=range(15), y=korelacje, marker='o', color='purple')
-    plt.title('Korelacja między opadem a poziomem wody w zależności od opóźnienia (0-14 dni)', fontsize=14)
+    for nazwa, vals in korelacje.items():
+        sns.lineplot(x=range(15), y=vals, marker=markers[nazwa], label=nazwa)
+    plt.title('Korelacja opadu z poziomem wody w zależności od opóźnienia', fontsize=14)
     plt.xlabel('Opóźnienie (dni)')
     plt.ylabel('Współczynnik korelacji (Pearson)')
-    plt.tight_layout()
-    plt.show()
-
-
-#Heatmapa korelacji między zmiennymi meteorologicznymi a poziomem wody.
-def plot_macierz_korelacji(df):
-    cols = [
-        'Opad_suma',
-        'Opad_72h',
-        'Opad_7d',
-        'Temp_średnia',
-        'Wilgotność_średnia',
-        'Ciśnienie_średnia',
-        'Poziom_wody_max'
-    ]
-    corr_matrix = df[cols].corr()
-
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(
-        corr_matrix,
-        annot=True,
-        fmt='.2f',
-        cmap='coolwarm',
-        center=0
-    )
-    plt.title('Macierz korelacji',fontsize=14)
-    plt.tight_layout()
-    plt.show()
-
-
-#Wykres regresji liniowej Opad_72h vs poziom wody.
-def plot_regresja_opad_woda(df):
-    plt.figure(figsize=(10, 6))
-
-    sns.regplot(
-        data=df,
-        x='Opad_72h',
-        y='Poziom_wody_max',
-        scatter_kws={'alpha': 0.3}
-    )
-
-    plt.title('Opad skumulowany 72h a maksymalny poziom wody')
-    plt.xlabel('Opad 72h [mm]')
-    plt.ylabel('Poziom wody max [m]')
-
-    plt.tight_layout()
-    plt.show()
-
-#KDE rozkładu poziomu wody przy małym i dużym opadzie.
-def plot_kde_opad_grupy(df):
-    q25 = df['Opad_suma'].quantile(0.25)
-    q75 = df['Opad_suma'].quantile(0.75)
-
-    maly_opad = df[df['Opad_suma'] <= q25]['Poziom_wody_max']
-    duzy_opad = df[df['Opad_suma'] >= q75]['Poziom_wody_max']
-
-    plt.figure(figsize=(10, 6))
-    sns.kdeplot(maly_opad, label='Mały opad (<= 25%)', fill=True, alpha=0.4)
-    sns.kdeplot(duzy_opad, label='Duży opad (>= 75%)', fill=True, alpha=0.4)
-    plt.title('Porównanie rozkładów poziomu wody przy małym i dużym opadzie', fontsize=14)
-    plt.xlabel('Maksymalny poziom wody [m]')
-    plt.ylabel('Gęstość')
     plt.legend()
     plt.tight_layout()
     plt.show()
 
-#Boxplot poziomu wody przy małym i dużym opadzie.
-def plot_boxplot_opad_grupy(df):
+
+
+# Heatmapa korelacji dla wszystkich stacji + zmiennych meteo
+def plot_macierz_korelacji_wszystkie(df):
+    cols = [
+        'Opad_suma', 'Opad_72h', 'Opad_7d',
+        'Temp_średnia', 'Wilgotność_średnia', 'Ciśnienie_średnia',
+        'Martwa_Wisla_średnia', 'Martwa_Wisla_max',
+        'Port_Polnocny_średnia', 'Port_Polnocny_max',
+        'Poziom_wody_max',
+    ]
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(df[cols].corr(), annot=True, fmt='.2f', cmap='coolwarm', center=0)
+    plt.title('Macierz korelacji')
+    plt.tight_layout()
+    plt.show()
+
+
+# Scatter: korelacja między stacjami śródlądowymi a Portem Północnym
+def plot_scatter_stacje_port(df):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    axes[0].scatter(df['Martwa_Wisla_max'], df['Port_Polnocny_max'],
+                    alpha=0.2, s=5, color='steelblue')
+    axes[0].set_xlabel('Martwa Wisła — poziom wody max [m]')
+    axes[0].set_ylabel('Port Północny — poziom wody max [m]')
+    axes[0].set_title('Martwa Wisła vs. Port Północny (r = 0.42)')
+
+    axes[1].scatter(df['Poziom_wody_max'], df['Port_Polnocny_max'],
+                    alpha=0.2, s=5, color='darkorange')
+    axes[1].set_xlabel('Strzyża — poziom wody max [m]')
+    axes[1].set_ylabel('Port Północny — poziom wody max [m]')
+    axes[1].set_title('Strzyża vs. Port Północny (r = 0.44)')
+
+    plt.suptitle('Zależność między stacjami śródlądowymi a Portem Północnym', y=1.02)
+    plt.tight_layout()
+    plt.show()
+
+# Regresja liniowa Opad_72h vs poziom wody dla wszystkich stacji
+def plot_regresja_opad_woda_wszystkie(df):
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    for ax, (nazwa, col) in zip(axes, STACJE.items()):
+        sns.regplot(data=df, x='Opad_72h', y=col,
+                    scatter_kws={'alpha': 0.2}, ax=ax)
+        ax.set_title(f'Opad 72h a poziom wody — {nazwa}')
+        ax.set_xlabel('Opad 72h [mm]')
+        ax.set_ylabel('Poziom wody max [m]')
+    plt.tight_layout()
+    plt.show()
+
+# KDE rozkładu poziomu wody przy małym i dużym opadzie dla wszystkich stacji
+def plot_kde_opad_grupy_wszystkie(df):
     q25 = df['Opad_suma'].quantile(0.25)
     q75 = df['Opad_suma'].quantile(0.75)
+    maly = df[df['Opad_suma'] <= q25]
+    duzy = df[df['Opad_suma'] >= q75]
 
-    maly_opad = df[df['Opad_suma'] <= q25]['Poziom_wody_max']
-    duzy_opad = df[df['Opad_suma'] >= q75]['Poziom_wody_max']
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=False)
+    for ax, (nazwa, col) in zip(axes, STACJE.items()):
+        sns.kdeplot(maly[col], ax=ax, label='Mały opad (≤25%)', fill=True, alpha=0.5)
+        sns.kdeplot(duzy[col], ax=ax, label='Duży opad (≥75%)', fill=True, alpha=0.5)
+        ax.set_title(nazwa)
+        ax.set_xlabel('Poziom wody [m]')
+        ax.set_ylabel('Gęstość')
+        ax.legend()
+    plt.tight_layout()
+    plt.show()
 
-    min_len = min(len(maly_opad), len(duzy_opad))
+# Boxplot poziomu wody przy małym i dużym opadzie dla wszystkich stacji
+def plot_boxplot_opad_grupy_wszystkie(df):
+    q25 = df['Opad_suma'].quantile(0.25)
+    q75 = df['Opad_suma'].quantile(0.75)
+    maly = df[df['Opad_suma'] <= q25]
+    duzy = df[df['Opad_suma'] >= q75]
 
-    porownanie = pd.DataFrame({
-        'Mały opad (<= 25%)': maly_opad[:min_len],
-        'Duży opad (>= 75%)': duzy_opad[:min_len]
-    })
+    dane_box = pd.concat([
+        maly[list(STACJE.values())].rename(columns={v: f'{k} - mały' for k, v in STACJE.items()}),
+        duzy[list(STACJE.values())].rename(columns={v: f'{k} - duży' for k, v in STACJE.items()}),
+    ], axis=0)
 
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(data=porownanie)
-    plt.title('Porównanie rozkładów poziomu wody przy małym i dużym opadzie')
-    plt.ylabel('Maksymalny poziom wody [m]')
+    plt.figure(figsize=(14, 6))
+    sns.boxplot(data=dane_box)
+    plt.xticks(rotation=30, ha='right')
+    plt.ylabel('Poziom wody [m]')
+    plt.title('Poziom wody przy małych i dużych opadach — wszystkie stacje')
+    plt.tight_layout()
+    plt.show()
+
+# Heatmapa korelacji Port Północny + wiatr + ciśnienie
+def plot_macierz_port_wiatr_cisnienie(df):
+    predyktory_port = [
+        'Ciśnienie_średnia', 'Ciśnienie_min', 'Ciśnienie_ampl',
+        'Ciśnienie_delta_1d', 'Ciśnienie_delta_2d', 'Ciśnienie_delta_3d',
+        'Ciśnienie_trend_3d', 'Ciśnienie_trend_7d',
+        'Wiatr_siła_proxy', 'Wiatr_sin_proxy', 'Wiatr_cos_proxy',
+        'Port_Polnocny_max'
+    ]
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(df[predyktory_port].corr(), annot=True, fmt='.2f',
+                cmap='coolwarm', center=0)
+    plt.title('Macierz korelacji — Port Północny: wiatr i ciśnienie')
+    plt.tight_layout()
+    plt.show()
+
+# Scatter: siła wiatru i zmiana ciśnienia vs poziom wody w Porcie Północnym
+def plot_scatter_port_wiatr_cisnienie(df):
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    axes[0].scatter(df['Wiatr_siła_proxy'], df['Port_Polnocny_max'],
+                    alpha=0.2, s=5, color='steelblue')
+    axes[0].set_xlabel('Siła wiatru (proxy)')
+    axes[0].set_ylabel('Port Północny — poziom wody max [m]')
+    axes[0].set_title('Siła wiatru vs. poziom wody w porcie')
+
+    axes[1].scatter(df['Ciśnienie_delta_1d'], df['Port_Polnocny_max'],
+                    alpha=0.2, s=5, color='darkorange')
+    axes[1].set_xlabel('Zmiana ciśnienia 1d [hPa]')
+    axes[1].set_ylabel('Port Północny — poziom wody max [m]')
+    axes[1].set_title('Dzienna zmiana ciśnienia vs. poziom wody w porcie')
+
+    plt.tight_layout()
+    plt.show()
+
+# Boxplot poziomu wody w Porcie Północnym według sektora wiatru
+def plot_boxplot_port_sektor_wiatru(df):
+    plt.figure(figsize=(10, 5))
+    kolejnosc = sorted(df['Wiatr_sektor_proxy'].dropna().unique())
+    sns.boxplot(data=df, x='Wiatr_sektor_proxy', y='Port_Polnocny_max', order=kolejnosc)
+    plt.title('Poziom wody w Porcie Północnym według sektora wiatru')
+    plt.xlabel('Sektor wiatru')
+    plt.ylabel('Poziom wody max [m]')
+    plt.tight_layout()
+    plt.show()
+
+# Boxplot ciśnienia i siły wiatru według reżimu hydrologicznego
+# Reżimy: cofka (P10), normalny, spiętrzenie (P90)
+def plot_boxplot_port_rezim_atmosfera(df):
+    prog_cofka = df['Port_Polnocny_max'].quantile(0.10)
+    prog_spietzenie = df['Port_Polnocny_max'].quantile(0.90)
+
+    cofka      = df[df['Port_Polnocny_max'] <= prog_cofka]
+    spietzenie = df[df['Port_Polnocny_max'] >= prog_spietzenie]
+    normalny   = df[(df['Port_Polnocny_max'] > prog_cofka) &
+                    (df['Port_Polnocny_max'] < prog_spietzenie)]
+
+    def do_long(col):
+        return pd.concat([
+            cofka[[col]].assign(Reżim='Cofka'),
+            normalny[[col]].assign(Reżim='Normalny'),
+            spietzenie[[col]].assign(Reżim='Spiętrzenie'),
+        ], ignore_index=True)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    sns.boxplot(data=do_long('Ciśnienie_średnia'), x='Reżim', y='Ciśnienie_średnia', ax=axes[0])
+    axes[0].set_title('Ciśnienie atmosferyczne według reżimu')
+    axes[0].set_ylabel('Ciśnienie [hPa]')
+
+    sns.boxplot(data=do_long('Wiatr_siła_proxy'), x='Reżim', y='Wiatr_siła_proxy', ax=axes[1])
+    axes[1].set_title('Siła wiatru według reżimu')
+    axes[1].set_ylabel('Siła wiatru (proxy)')
+
+    plt.suptitle('Warunki atmosferyczne w trzech reżimach Portu Północnego')
     plt.tight_layout()
     plt.show()
