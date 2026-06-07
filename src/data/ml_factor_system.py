@@ -237,13 +237,13 @@ def diagnozuj(obserwacja: pd.Series,
     proba = model.predict_proba(X_obs)[0, 1]
 
     if poprzednia_proba is None:
-        kierunek = '→'
+        kierunek = 'bez zmian'
     elif proba > poprzednia_proba:
-        kierunek = '↑'
+        kierunek = 'wzrost'
     elif proba < poprzednia_proba:
-        kierunek = '↓'
+        kierunek = 'spadek'
     else:
-        kierunek = '→'
+        kierunek = 'bez zmian'
 
     if proba >= 0.65:
         ryzyko = 'wysokie'
@@ -338,7 +338,7 @@ def _wykres_confusion(y_true, y_pred):
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=['Brak alarmu', 'Alarm'],
                 yticklabels=['Brak epizodu', 'Epizod'])
-    plt.title(f'Macierz pomyłek – RF (target: ≥{EPIZOD_MIN_STACJI} stacji)')
+    plt.title(f'Macierz pomyłek – RF (target: >= {EPIZOD_MIN_STACJI} stacji)')
     plt.xlabel('Predykcja')
     plt.ylabel('Rzeczywistość')
     plt.tight_layout()
@@ -385,13 +385,13 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
     # Trening finalnego modelu z globalnym progiem (brak podziału train/test)
     df, X, y = _przygotuj_dane(final)
 
-    print(f"=== Epizody wysokiej wody (p{int(EPIZOD_PERCENTYL*100)}, ≥{EPIZOD_MIN_STACJI} stacji) ===")
+    print(f"=== Epizody wysokiej wody (p{int(EPIZOD_PERCENTYL*100)}, >= {EPIZOD_MIN_STACJI} stacji) ===")
     for nazwa, kolumny in STACJE.items():
         col_epizod = f'Epizod_{nazwa}'
         prog = df[f'Prog_{nazwa}'].iloc[0]
         n = int(df[col_epizod].sum())
-        print(f"  {nazwa:20s}: próg={prog:.3f}, epizodów={n} ({100*n/len(df):.1f}%)")
-    print(f"  {'Łącznie (≥2 stacji)':20s}: epizodów={int(y.sum())} ({100*y.mean():.1f}%)")
+        print(f"  {nazwa:20s}: próg={prog:.3f}, epizodow={n} ({100*n/len(df):.1f}%)")
+    print(f"  {'Lacznie ( >= 2 stacji)':20s}: epizodow={int(y.sum())} ({100*y.mean():.1f}%)")
 
     # Walidacja czasowa z rolling threshold
     wyniki_walidacji = walidacja_czasowa(final)
@@ -408,7 +408,7 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
     _wykres_epizody_per_stacja(df)
 
     # Trening finalnego modelu
-    print(f"\n=== Trening finalnego modelu (cały zbiór, target ≥{EPIZOD_MIN_STACJI} stacji) ===")
+    print(f"\n=== Trening finalnego modelu (cały zbiór, target >= {EPIZOD_MIN_STACJI} stacji) ===")
     model = trenuj_model(X, y)
 
     fi = feature_importance_df(model)
@@ -421,7 +421,7 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
     y_pred_all = (proba_all >= PROB_THRESHOLD).astype(int)
     prec = precision_score(y, y_pred_all, zero_division=0)
     rec  = recall_score(y, y_pred_all, zero_division=0)
-    print(f"\n=== Metryki na całym zbiorze (próg={PROB_THRESHOLD}) ===")
+    print(f"\n=== Metryki na całym zbiorze (prog={PROB_THRESHOLD}) ===")
     print(f"  Precision : {prec:.3f}")
     print(f"  Recall    : {rec:.3f}")
     print(classification_report(y, y_pred_all,
@@ -453,7 +453,7 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
 
     diagnozy = pd.DataFrame(wiersze).set_index('Data')
     diagnozy.to_csv('reports/ml/diagnozy_dzienne_rf.csv')
-    print("Zapisano → reports/ml/diagnozy_dzienne_rf.csv")
+    print("Zapisano -> reports/ml/diagnozy_dzienne_rf.csv")
 
     ostatnia = df.iloc[-1]
     przedostatnia_proba = diagnozy['prawdopodobienstwo'].iloc[-2] if len(diagnozy) > 1 else None
@@ -473,7 +473,7 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
 if __name__ == "__main__":
 
     final = pd.read_csv(
-        "../../data/processed/final.csv",
+        "data/processed/final.csv",
         parse_dates=["Data"],
         index_col="Data"
     )
