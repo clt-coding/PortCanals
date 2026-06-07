@@ -121,7 +121,7 @@ def add_meteo_engineered_features(df):
 
     return df
 
-def clean_water_level_and_day_step(df):
+def clean_strzyza_level_and_day_step(df):
     df['Poziom wody [m]'] = df['Poziom wody [m]'].astype(str).str.replace(',', '.')
     df['Poziom wody [m]'] = pd.to_numeric(df['Poziom wody [m]'], errors='coerce')
 
@@ -171,27 +171,96 @@ def add_water_level_engineered_features(df):
 
     return df
 
+
+def clean_martwa_wisla_and_day_step(df):
+    df['Poziom wody [m]'] = df['Poziom wody [m]'].astype(str).str.replace(',', '.')
+    df['Poziom wody [m]'] = pd.to_numeric(df['Poziom wody [m]'], errors='coerce')
+
+    df.loc[(df['Poziom wody [m]'] < -2) | (df['Poziom wody [m]'] > 2), 'Poziom wody [m]'] = np.nan
+
+    df = df.dropna(subset=['Poziom wody [m]'])
+
+    df["Data"] = pd.to_datetime(df["Data"])
+    df["Dzień"] = df["Data"].dt.date
+
+    df_dobowe = df.groupby("Dzień").agg({
+        "Poziom wody [m]": ["mean", "max"],
+    })
+
+    df_dobowe.columns = ['Martwa_Wisla_średnia', 'Martwa_Wisla_max']
+
+    return df_dobowe
+
+
+def clean_port_polnocny_and_day_step(df):
+    df['Poziom wody [m]'] = df['Poziom wody [m]'].astype(str).str.replace(',', '.')
+    df['Poziom wody [m]'] = pd.to_numeric(df['Poziom wody [m]'], errors='coerce')
+
+    df.loc[(df['Poziom wody [m]'] < 0) | (df['Poziom wody [m]'] > 10), 'Poziom wody [m]'] = np.nan
+
+    df = df.dropna(subset=['Poziom wody [m]'])
+
+    df["Data"] = pd.to_datetime(df["Data"])
+    df["Dzień"] = df["Data"].dt.date
+
+    df_dobowe = df.groupby("Dzień").agg({
+        "Poziom wody [m]": ["mean", "max"],
+    })
+
+    df_dobowe.columns = ['Port_Polnocny_średnia', 'Port_Polnocny_max']
+
+    return df_dobowe
+
+
+def fix_missing_port_polnocny(df):
+    full_range = pd.date_range(start=df.index.min(), end=df.index.max(), freq='D')
+    df = df.reindex(full_range)
+    df.index.name = 'Data'
+
+    df['month'] = df.index.month
+    df['day'] = df.index.day
+
+    # interpolacja liniowa dla długich przerw
+    df['Port_Polnocny_średnia'] = df['Port_Polnocny_średnia'].interpolate(method='time')
+    df['Port_Polnocny_max'] = df['Port_Polnocny_max'].interpolate(method='time')
+
+    df = df.drop(columns=['day'])
+    return df
+
 # -- zbieranie wszystkiego "do kupy" --
 def build_main_df():
     if os.path.exists('data/processed/final.csv'):
         return pd.read_csv('data/processed/final.csv', index_col='Data', parse_dates=True)
 
-    from dataset import build_meteo_dataframe, build_water_level_dataframe
+    from src.data.dataset import build_meteo_dataframe, build_strzyza_level_dataframe, build_martwa_wisla_dataframe, build_port_polnocny_dataframe
 
     df_meteo_raw = build_meteo_dataframe()
     full_meteo = clean_meteo_and_day_step(df_meteo_raw)
     full_meteo = fix_missing_meteo(full_meteo)
     full_meteo = add_meteo_engineered_features(full_meteo)
 
-    df_water_raw = build_water_level_dataframe()
-    full_water = clean_water_level_and_day_step(df_water_raw)
-    full_water = fix_missing_water_level(full_water)
-    full_water = add_water_level_engineered_features(full_water)
+    df_strzyza_raw = build_strzyza_level_dataframe()
+    full_strzyza = clean_strzyza_level_and_day_step(df_strzyza_raw)
+    full_strzyza = fix_missing_water_level(full_strzyza)
+    full_strzyza = add_water_level_engineered_features(full_strzyza)
+
+    df_martwa_raw = build_martwa_wisla_dataframe()
+    full_martwa = clean_martwa_wisla_and_day_step(df_martwa_raw)
+    full_martwa = fix_missing_water_level(full_martwa)
+    full_martwa = full_martwa.drop(columns=['month'])
+
+    # Port Północny
+    df_port_raw = build_port_polnocny_dataframe()
+    full_port = clean_port_polnocny_and_day_step(df_port_raw)
+    full_port = fix_missing_port_polnocny(full_port)
+    full_port = full_port.drop(columns=['month'])
 
     cols_to_drop = ['month', 'sezon', 'doy', 'sin_doy', 'cos_doy']
-    full_water = full_water.drop(columns=cols_to_drop)
+    full_water = full_strzyza.drop(columns=cols_to_drop)
 
     final = full_meteo.join(full_water, how='inner')
+    final = final.join(full_martwa, how='left')
+    final = final.join(full_port, how='left')
 
     os.makedirs('data/processed', exist_ok=True)
     final.to_csv('data/processed/final.csv', index=True)
