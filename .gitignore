@@ -3,3 +3,7 @@ __MACOSX/
 __pycache__
 notebooks/.ipynb_checkpoints/
 .vscode/
+.venv/
+venv/
+__pycache__/
+*.pyc
