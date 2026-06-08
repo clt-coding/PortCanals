@@ -377,3 +377,39 @@ def plot_boxplot_port_rezim_atmosfera(df):
     plt.suptitle('Warunki atmosferyczne w trzech reżimach Portu Północnego')
     plt.tight_layout()
     plt.show()
+
+def plot_rezim_cisnienie_wiatr(df):
+    prog_cofka = df['Port_Polnocny_max'].quantile(0.10)
+    prog_spietzenie = df['Port_Polnocny_max'].quantile(0.90)
+
+    cofka = df[df['Port_Polnocny_max'] <= prog_cofka]
+    spietzenie = df[df['Port_Polnocny_max'] >= prog_spietzenie]
+    normalny = df[(df['Port_Polnocny_max'] > prog_cofka) &
+                  (df['Port_Polnocny_max'] < prog_spietzenie)]
+
+    rezimy = ['Niski poziom (≤ P10)', 'Normalny', 'Wysoki poziom (≥ P90)']
+    cisnienia = [cofka['Ciśnienie_średnia'].mean(),
+                 normalny['Ciśnienie_średnia'].mean(),
+                 spietzenie['Ciśnienie_średnia'].mean()]
+    wiatry = [cofka['Wiatr_siła_proxy'].mean(),
+              normalny['Wiatr_siła_proxy'].mean(),
+              spietzenie['Wiatr_siła_proxy'].mean()]
+
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+    color = 'tab:blue'
+    ax1.set_xlabel('Reżim hydrologiczny')
+    ax1.set_ylabel('Średnie ciśnienie [hPa]', color=color)
+    ax1.bar(rezimy, cisnienia, color=color, alpha=0.4, width=0.4)
+    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.set_ylim(1000, 1025)
+
+    ax2 = ax1.twinx()
+    color = 'tab:red'
+    ax2.set_ylabel('Średnia siła wiatru', color=color)
+    ax2.plot(rezimy, wiatry, color=color, marker='o', linewidth=2, markersize=8)
+    ax2.tick_params(axis='y', labelcolor=color)
+    ax2.set_ylim(2, 8)
+
+    plt.title('Charakterystyka warunków atmosferycznych w reżimach Portu Północnego')
+    fig.tight_layout()
+    plt.show()
