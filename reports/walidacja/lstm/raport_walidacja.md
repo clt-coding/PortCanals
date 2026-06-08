@@ -31,9 +31,13 @@ Wysokie wartości odchyleń standardowych świadczą o znacznej zmienności dok�
 ## 7.2. Pokrycie zdarzeń (Event Coverage / Recall)
 Metryka określa, jaki odsetek rzeczywistych epizodów wysokiej wody został wykryty przez model.
 
-| Metryka      | Wartość |
-| ------------ | ------- |
-| Event Recall | 0,817   |
+
+| Metryka                     | Wartość |
+| --------------------------- | ------- |
+| Rzeczywiste epizody         | 60      |
+| Epizody wykryte przez model | 49      |
+| Epizody niewykryte          | 11      |
+| Event Recall                | 0,817   |
 
 Wnioski:
 Model wykrył około **81,7% rzeczywistych epizodów wysokiej wody**. Wynik ten należy uznać za dobry, ponieważ większość zdarzeń została poprawnie rozpoznana. Jednocześnie około 18% epizodów pozostało niewykrytych.
@@ -42,13 +46,26 @@ Model wykrył około **81,7% rzeczywistych epizodów wysokiej wody**. Wynik ten 
 ## 7.3. Fałszywe alarmy (False Alarm Rate)
 Metryka ta pozwala ocenić liczbę błędnych alarmów generowanych przez model.
 
+### Poziom dzienny
+Jeśli model przewidział alarm na 8 dni (czyli włączył go 3 dni za wcześnie), to te 3 dni są traktowane jako 3 osobne fałszywe alarmy.
+
 | Metryka             | Wartość |
 | ------------------- | ------- |
-| Day-level Precision | 0,411   |
-| Event FAR           | 0,492   |
+| Precision           | 0,411   |
+| False Alarm Rate    | 0,589   |
 
 Wnioski:
 * precyzja na poziomie dziennym wynosi jedynie **41,1%**, co oznacza, że mniej niż połowa dni oznaczonych przez model jako epizodowe odpowiada rzeczywistym zdarzeniom.
+
+### Poziom zdarzeń
+
+| Metryka                        | Wartość |
+| ------------------------------ | ------- |
+| Liczba przewidzianych epizodów | 61      |
+| Fałszywe epizody               | 30      |
+| Event FAR                      | 0,492   |
+
+Interpretacja:
 * wskaźnik **Event FAR = 0,492** oznacza, że prawie **49% wykrytych epizodów stanowiło fałszywe alarmy**. Jest to jedna z głównych słabości modelu LSTM i wskazuje na jego tendencję do nadmiernego generowania alarmów.
 
 ## 7.4. Błąd piku wezbrania
@@ -58,6 +75,14 @@ Metryka ocenia dokładność określenia momentu wystąpienia maksimum wezbrania
 | -------------------------- | ---------- |
 | Średni błąd czasu piku     | -3,58 dnia |
 | Średni błąd wysokości piku | +0,1477    |
+
+| Metryka                          | Wartość    |
+| -------------------------------- | ---------- |
+| Liczba dopasowanych epizodów     | 31         |
+| Średni błąd czasu piku           | -3.58 dni  |
+| Odchylenie standardowe           | 8.64 dnia  |
+| Średni błąd wysokości piku       | +0,1477    |
+| Odchylenie standardowe wysokości | 0,2288     |
 
 Interpretacja:
 * maksimum wezbrania jest wskazywane średnio około **3,6 dnia wcześniej** niż ma to miejsce w rzeczywistości.
