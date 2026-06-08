@@ -248,7 +248,8 @@ def diagnozuj(obserwacja: pd.Series,
 def _wykres_feature_importance(fi: pd.DataFrame):
     os.makedirs('reports/ml/rf', exist_ok=True)
     plt.figure(figsize=(10, 6))
-    sns.barplot(data=fi.head(15), x='waznosc_pct', y='czynnik', palette='viridis')
+    sns.barplot(data=fi.head(15), x='waznosc_pct', y='czynnik',
+                hue='czynnik', palette='viridis', legend=False)
     plt.title('Ważność cech – Random Forest (top 15)', fontsize=14)
     plt.xlabel('Ważność [%]')
     plt.ylabel('Czynnik meteorologiczny')
