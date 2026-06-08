@@ -1,0 +1,24 @@
+
+--- EKSPERYMENT LSTM: 2026-06-08 20:27:58 ---
+PROB_THRESHOLD: 0.5
+PARAMETRY: {'units_1': 64, 'learning_rate': 0.001, 'batch_size': 32, 'epochs': 100, 'patience': 10, 'dropout': 0.5}
+Średnie F1 (walidacja): 0.492
+Finalne Precision: 0.451
+Finalne Recall: 0.878
+----------------------------------------
+
+--- EKSPERYMENT LSTM: 2026-06-08 20:41:29 ---
+PROB_THRESHOLD: 0.5
+PARAMETRY: {'units_1': 64, 'learning_rate': 0.001, 'batch_size': 32, 'epochs': 100, 'patience': 10, 'dropout': 0.5}
+Średnie F1 (walidacja): 0.493
+Finalne Precision: 0.369
+Finalne Recall: 0.878
+----------------------------------------
+
+--- EKSPERYMENT LSTM: 2026-06-08 20:56:42 ---
+PROB_THRESHOLD: 0.5
+PARAMETRY: {'units_1': 64, 'learning_rate': 0.001, 'batch_size': 32, 'epochs': 100, 'patience': 10, 'dropout': 0.5}
+Średnie F1 (walidacja): 0.499
+Finalne Precision: 0.386
+Finalne Recall: 0.889
+----------------------------------------

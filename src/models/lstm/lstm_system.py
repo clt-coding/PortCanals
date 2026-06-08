@@ -1,17 +1,10 @@
-# Użycie:
-#   from src.data.lstm_system import uruchom_system_lstm
-#   diagnozy_lstm = uruchom_system_lstm(final)
-#
-# Moduł jest celowo symetryczny do ml_factor_system.py — te same cechy,
-# ten sam target (≥2 stacje p90), ta sama walidacja walk-forward.
-# Dzięki temu wyniki są bezpośrednio porównywalne.
-
 import os
 import datetime
 import numpy as np
 import pandas as pd
 import matplotlib
-
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -21,7 +14,6 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import StandardScaler
 
-# TensorFlow/Keras — importujemy tu, żeby błąd był widoczny od razu
 try:
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization
@@ -31,8 +23,6 @@ except ImportError as e:
     raise ImportError(
         "TensorFlow nie jest zainstalowany. Uruchom: pip install tensorflow"
     ) from e
-
-# ── KONFIGURACJA (identyczna z ml_factor_system.py) ──────────────────────────
 
 FEATURES = [
     'Opad_suma',
@@ -71,34 +61,20 @@ EPIZOD_PERCENTYL = 0.90
 EPIZOD_MIN_STACJI = 2
 MIN_TRAIN_YEARS = 2
 
-# ── HIPERPARAMETRY LSTM ───────────────────────────────────────────────────────
-
-# Ile poprzednich dni models „widzi" przy jednej predykcji.
-# Wartość 7 oznacza: cechy z dni t-6…t → predykcja na dzień t.
-# Dobrana eksperymentalnie: mniejsze okno (<5) gubi trendy sezonowe,
-# większe (>14) wydłuża trening i może powodować overfitting na małym zbiorze.
-SEQ_LEN = 7
+SEQ_LEN = 7 # 7 dni wstecz
 
 LSTM_PARAMS = {
-    'units_1': 64,  # neurony w pierwszej warstwie LSTM
-    'units_2': 32,  # neurony w drugiej warstwie LSTM
-    'dropout': 0.5,  # dropout między warstwami (regularizacja)
+    'units_1': 64,
     'learning_rate': 1e-3,
     'batch_size': 32,
-    'epochs': 100,  # EarlyStopping zatrzyma wcześniej
-    'patience': 10,  # cierpliwość EarlyStopping
+    'epochs': 100,
+    'patience': 10,
+    'dropout': 0.5,
 }
 
-PROB_THRESHOLD = 0.50  # identyczny z RF dla uczciwego porównania
-
-
-# ── 1. PRZYGOTOWANIE DANYCH ───────────────────────────────────────────────────
+PROB_THRESHOLD = 0.50
 
 def _buduj_epizody(df: pd.DataFrame, train_mask: pd.Series) -> pd.DataFrame:
-    """
-    Identyczna logika jak w ml_factor_system.py.
-    Próg p90 liczony wyłącznie na danych treningowych → brak data leakage.
-    """
     for nazwa, kolumny in STACJE.items():
         col_max = kolumny['max']
         if col_max not in df.columns:
@@ -113,15 +89,6 @@ def _buduj_epizody(df: pd.DataFrame, train_mask: pd.Series) -> pd.DataFrame:
 
 
 def _buduj_sekwencje(X: np.ndarray, y: np.ndarray, seq_len: int):
-    """
-    Przekształca płaskie tablice (n_dni × n_cech) w 3D tensor (n_sekwencji × seq_len × n_cech).
-    Etykieta sekwencji = etykieta ostatniego dnia w oknie.
-
-    Przykład przy seq_len=7:
-      sekwencja 0: X[0:7]  → y[6]
-      sekwencja 1: X[1:8]  → y[7]
-      ...
-    """
     Xs, ys = [], []
     for i in range(len(X) - seq_len + 1):
         Xs.append(X[i: i + seq_len])
@@ -130,10 +97,6 @@ def _buduj_sekwencje(X: np.ndarray, y: np.ndarray, seq_len: int):
 
 
 def _przygotuj_dane(final: pd.DataFrame):
-    """
-    Wersja dla finalnego modelu (trening na całym zbiorze).
-    Zwraca df, X_arr (3D), y_arr (1D).
-    """
     df = final.copy()
     all_mask = pd.Series(True, index=df.index)
     df = _buduj_epizody(df, train_mask=all_mask)
@@ -149,30 +112,11 @@ def _przygotuj_dane(final: pd.DataFrame):
     X_scaled = scaler.fit_transform(X_flat)
 
     X_seq, y_seq = _buduj_sekwencje(X_scaled, y_flat, SEQ_LEN)
-    # Daty odpowiadające etykietom (ostatni dzień każdej sekwencji)
     daty_seq = df.index[SEQ_LEN - 1:]
 
     return df, X_seq, y_seq, daty_seq, scaler
 
-
-# ── 2. BUDOWA MODELU ──────────────────────────────────────────────────────────
-
 def _buduj_model(n_features: int, p: dict) -> Sequential:
-    """
-    Architektura:
-      LSTM(64, return_sequences=True)
-        → BatchNormalization → Dropout(0.5)
-      LSTM(32)
-        → BatchNormalization → Dropout(0.5)
-      Dense(16, relu)
-      Dense(1, sigmoid)   ← wyjście: P(epizod)
-
-    Uzasadnienie głębokości:
-      - Dwie warstwy LSTM: pierwsza wychwytuje krótkoterminowe wzorce (kolejność deszczy),
-        druga — dłuższe trendy sezonowe zakodowane w sin/cos_doy.
-      - BatchNorm przyspiesza zbieżność i stabilizuje gradienty.
-      - Dropout(0.5) ogranicza overfitting na ~1600 próbkach treningowych.
-    """
     model = Sequential([
         LSTM(p['units_1'], input_shape=(SEQ_LEN, n_features), return_sequences=False),
         BatchNormalization(),
@@ -190,24 +134,11 @@ def _buduj_model(n_features: int, p: dict) -> Sequential:
     )
     return model
 
-
-# ── 3. WALIDACJA CZASOWA (walk-forward, identyczna z RF) ─────────────────────
-
 def walidacja_czasowa(final: pd.DataFrame) -> pd.DataFrame:
-    """
-    Walk-forward validation rok-po-roku.
-    Dla każdego roku testowego:
-      1. Budujemy epizody z progiem p90 tylko z lat treningowych.
-      2. Skalujemy cechy TYLKO na danych treningowych (fit na train, transform na obu).
-      3. Trenujemy LSTM z EarlyStopping.
-      4. Oceniamy na danych testowych.
-
-    Benchmark: próg Opad_72h z danych treningowych (jak w RF).
-    """
     lata = sorted(final.index.year.unique())
     wyniki = []
 
-    print("=== Walidacja czasowa LSTM (walk-forward) ===")
+    print("Walidacja czasowa LSTM (walk-forward)")
 
     for i, rok_test in enumerate(lata):
         if i == 0:
@@ -227,7 +158,6 @@ def walidacja_czasowa(final: pd.DataFrame) -> pd.DataFrame:
         X_flat = df_iter[FEATURES].values.astype(np.float32)
         y_flat = df_iter['Epizod_rzeczywisty'].values.astype(np.float32)
 
-        # Skalowanie: fit tylko na train
         idx_train_end = maska_train.sum()
         scaler = StandardScaler()
         X_flat[:idx_train_end] = scaler.fit_transform(X_flat[:idx_train_end])
@@ -235,7 +165,6 @@ def walidacja_czasowa(final: pd.DataFrame) -> pd.DataFrame:
 
         X_seq, y_seq = _buduj_sekwencje(X_flat, y_flat, SEQ_LEN)
 
-        # Maska sekwencji: sekwencja należy do testu, jeśli jej ostatni dzień jest testowy
         daty_all = df_iter.index[SEQ_LEN - 1:]
         mask_seq_train = daty_all.year < rok_test
         mask_seq_test = daty_all.year == rok_test
@@ -246,7 +175,6 @@ def walidacja_czasowa(final: pd.DataFrame) -> pd.DataFrame:
         if y_train_s.sum() < 5 or len(X_test_s) == 0:
             continue
 
-        # Obliczamy class_weight ręcznie, bo Keras nie ma parametru jak sklearn
         n_pos = int(y_train_s.sum())
         n_neg = len(y_train_s) - n_pos
         pos_weight = n_neg / max(n_pos, 1)
@@ -277,11 +205,10 @@ def walidacja_czasowa(final: pd.DataFrame) -> pd.DataFrame:
         rec = recall_score(y_test_s, y_pred, zero_division=0)
         f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
 
-        # Benchmark (identyczny z RF)
         opad72_train = df_iter.loc[maska_train, 'Opad_72h']
         prog_bench = opad72_train.quantile(EPIZOD_PERCENTYL)
         opad72_test = df_iter.loc[maska_test, 'Opad_72h'].values[SEQ_LEN - 1:]
-        # Wyrównujemy długość (sekwencje mogą skrócić zbiór)
+
         min_len = min(len(opad72_test), len(y_test_s))
         y_bench = (opad72_test[:min_len] >= prog_bench).astype(int)
         prec_b = precision_score(y_test_s[:min_len], y_bench, zero_division=0)
@@ -298,17 +225,13 @@ def walidacja_czasowa(final: pd.DataFrame) -> pd.DataFrame:
             'n_dni': int(mask_seq_test.sum()),
         })
 
-        print(f"  {rok_test}: LSTM recall={rec:.3f} prec={prec:.3f} F1={f1:.3f} | "
+        print(f"{rok_test}: LSTM recall={rec:.3f} prec={prec:.3f} F1={f1:.3f} | "
               f"benchmark recall={rec_b:.3f} prec={prec_b:.3f} | "
-              f"epizody(≥2 stacje)={int(y_test_s.sum())}")
+              f"epizody(>=2 stacje)={int(y_test_s.sum())}")
 
     return pd.DataFrame(wyniki)
 
-
-# ── 4. TRENING FINALNEGO MODELU ───────────────────────────────────────────────
-
 def trenuj_model(X_seq: np.ndarray, y_seq: np.ndarray) -> Sequential:
-    """Trenuje finalny LSTM na całym zbiorze."""
     n_pos = int(y_seq.sum())
     n_neg = len(y_seq) - n_pos
     pos_weight = n_neg / max(n_pos, 1)
@@ -333,11 +256,8 @@ def trenuj_model(X_seq: np.ndarray, y_seq: np.ndarray) -> Sequential:
     )
     return model, history
 
-
-# ── 5. WYKRESY ────────────────────────────────────────────────────────────────
-
 def _wykres_walidacja(wyniki_walidacji: pd.DataFrame):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('reports/ml/lstm', exist_ok=True)
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
     for ax, metryki, tytul in zip(
@@ -357,6 +277,8 @@ def _wykres_walidacja(wyniki_walidacji: pd.DataFrame):
         ax.legend()
         ax.set_ylim(0, 1)
         ax.axhline(0.5, color='gray', linestyle=':', alpha=0.5)
+        ax.set_xticks(wyniki_walidacji['Rok'])
+        ax.set_xticklabels(wyniki_walidacji['Rok'].astype(int)) 
 
     plt.suptitle(
         f'Walidacja czasowa LSTM (target: ≥{EPIZOD_MIN_STACJI} stacje p{int(EPIZOD_PERCENTYL * 100)}, '
@@ -364,13 +286,13 @@ def _wykres_walidacja(wyniki_walidacji: pd.DataFrame):
         fontsize=11,
     )
     plt.tight_layout()
-    plt.savefig('reports/ml/walidacja_czasowa_lstm_vs_benchmark.png', dpi=300)
+    plt.savefig('reports/ml/lstm/walidacja_czasowa_lstm_vs_benchmark.png', dpi=300)
     plt.close()
-    print("Wykres walidacji → reports/ml/walidacja_czasowa_lstm_vs_benchmark.png")
+    print("Wykres walidacji → reports/ml/lstm/walidacja_czasowa_lstm_vs_benchmark.png")
 
 
 def _wykres_confusion(y_true, y_pred):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('reports/ml/lstm', exist_ok=True)
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Oranges',
@@ -380,13 +302,13 @@ def _wykres_confusion(y_true, y_pred):
     plt.xlabel('Predykcja')
     plt.ylabel('Rzeczywistość')
     plt.tight_layout()
-    plt.savefig('reports/ml/confusion_matrix_lstm.png', dpi=300)
+    plt.savefig('reports/ml/lstm/confusion_matrix_lstm.png', dpi=300)
     plt.close()
-    print("Macierz pomyłek → reports/ml/confusion_matrix_lstm.png")
+    print("Macierz pomyłek → reports/ml/lstm/confusion_matrix_lstm.png")
 
 
 def _wykres_historia_treningu(history):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('reports/ml/lstm', exist_ok=True)
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
     axes[0].plot(history.history['loss'], label='train loss')
@@ -404,18 +326,14 @@ def _wykres_historia_treningu(history):
     axes[1].legend()
 
     plt.tight_layout()
-    plt.savefig('reports/ml/lstm_historia_treningu.png', dpi=300)
+    plt.savefig('reports/ml/lstm/historia_treningu.png', dpi=300)
     plt.close()
-    print("Historia treningu → reports/ml/lstm_historia_treningu.png")
+    print("Historia treningu → reports/ml/lstm/historia_treningu.png")
 
 
 def _wykres_porownanie_rf_lstm(wyniki_rf_path: str, wyniki_lstm: pd.DataFrame):
-    """
-    Wczytuje wyniki RF z CSV i rysuje porównanie F1 RF vs LSTM.
-    Jeśli plik RF nie istnieje, pomija wykres.
-    """
     if not os.path.exists(wyniki_rf_path):
-        print(f"[INFO] Brak {wyniki_rf_path} — pomijam wykres porównawczy RF vs LSTM.")
+        print(f"Brak {wyniki_rf_path} — pomijam wykres porównawczy RF vs LSTM.")
         return
 
     wyniki_rf = pd.read_csv(wyniki_rf_path)
@@ -450,7 +368,7 @@ def _wykres_porownanie_rf_lstm(wyniki_rf_path: str, wyniki_lstm: pd.DataFrame):
 
 
 def zapisz_wyniki_lstm_do_historii(wyniki_walidacji, prec, rec, prob_threshold, params):
-    plik_historia = 'reports/ml/historia_eksperymentow_lstm.txt'
+    plik_historia = 'reports/ml/lstm/historia_eksperymentow_lstm.txt'
     avg_f1 = wyniki_walidacji['F1_LSTM'].mean()
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -464,35 +382,20 @@ def zapisz_wyniki_lstm_do_historii(wyniki_walidacji, prec, rec, prob_threshold, 
         f.write(f"Finalne Recall: {rec:.3f}\n")
         f.write("-" * 40 + "\n")
 
-    print(f"\n[INFO] Wyniki LSTM zapisano do {plik_historia}")
-
-
-# ── 6. PIPELINE GŁÓWNY ────────────────────────────────────────────────────────
+    print(f"Wyniki LSTM zapisano do {plik_historia}")
 
 def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
-    """
-    Odpowiednik uruchom_system() z ml_factor_system.py dla LSTM.
-
-    Kolejność działań:
-      1. Walidacja czasowa walk-forward (raportuje metryki per rok).
-      2. Trening finalnego modelu na całym zbiorze.
-      3. Metryki na całym zbiorze (do porównania z RF).
-      4. Diagnozy dzienne → CSV.
-      5. Wykresy (walidacja, confusion matrix, historia treningu, RF vs LSTM).
-
-    Zwraca DataFrame z diagnozami dziennymi (jak ml_factor_system).
-    """
     print(f"\n{'=' * 60}")
-    print(f"  LSTM – system wykrywania epizodów wysokiej wody")
-    print(f"  seq_len={SEQ_LEN}, threshold={PROB_THRESHOLD}")
-    print(f"  target: ≥{EPIZOD_MIN_STACJI} stacje p{int(EPIZOD_PERCENTYL * 100)}")
+    print(f"LSTM – system wykrywania epizodów wysokiej wody")
+    print(f"seq_len={SEQ_LEN}, threshold={PROB_THRESHOLD}")
+    print(f"target: ≥{EPIZOD_MIN_STACJI} stacje p{int(EPIZOD_PERCENTYL * 100)}")
     print(f"{'=' * 60}\n")
 
     os.makedirs('reports/ml', exist_ok=True)
 
-    # -- Walidacja czasowa --
     wyniki_walidacji = walidacja_czasowa(final)
-    wyniki_walidacji.to_csv('reports/ml/walidacja_czasowa_lstm.csv', index=False)
+    os.makedirs('reports/ml/lstm', exist_ok=True)
+    wyniki_walidacji.to_csv('reports/ml/lstm/walidacja_czasowa_lstm.csv', index=False)
 
     print("\nPodsumowanie walidacji LSTM:")
     print(wyniki_walidacji[['Rok', 'Recall_LSTM', 'Precision_LSTM', 'F1_LSTM',
@@ -505,8 +408,7 @@ def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
         print(f"  Średnie: recall={avg_recall:.3f}, prec={avg_prec:.3f}, F1={avg_f1:.3f}")
         _wykres_walidacja(wyniki_walidacji)
 
-    # -- Trening finalnego modelu --
-    print(f"\n=== Trening finalnego modelu LSTM (cały zbiór) ===")
+    print(f"Trening finalnego modelu LSTM (cały zbiór)")
     df, X_seq, y_seq, daty_seq, scaler = _przygotuj_dane(final)
 
     print(f"  Epizodów (≥{EPIZOD_MIN_STACJI} stacje): {int(y_seq.sum())} / {len(y_seq)} "
@@ -527,9 +429,9 @@ def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
     prec = precision_score(y_seq, y_pred_all, zero_division=0)
     rec = recall_score(y_seq, y_pred_all, zero_division=0)
 
-    print(f"\n=== Metryki na całym zbiorze (próg={PROB_THRESHOLD}) ===")
-    print(f"  Precision : {prec:.3f}")
-    print(f"  Recall    : {rec:.3f}")
+    print(f"Metryki na całym zbiorze (próg={PROB_THRESHOLD})")
+    print(f"Precision: {prec:.3f}")
+    print(f"Recall: {rec:.3f}")
     print(classification_report(y_seq, y_pred_all,
                                 target_names=['Brak epizodu', 'Epizod'],
                                 zero_division=0))
@@ -537,8 +439,7 @@ def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
 
     zapisz_wyniki_lstm_do_historii(wyniki_walidacji, prec, rec, PROB_THRESHOLD, LSTM_PARAMS)
 
-    # -- Diagnozy dzienne --
-    print("=== Generowanie diagnoz dziennych ===")
+    print("Generowanie diagnoz dziennych")
     wiersze = []
     for i, data in enumerate(daty_seq):
         proba_val = float(proba_all[i])
@@ -550,7 +451,6 @@ def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
         else:
             ryzyko = 'niskie'
 
-        # Kierunek zmiany ryzyka względem poprzedniego dnia
         if i == 0:
             kierunek = '→'
         elif proba_all[i] > proba_all[i - 1]:
@@ -572,22 +472,19 @@ def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
         })
 
     diagnozy = pd.DataFrame(wiersze).set_index('Data')
-    diagnozy.to_csv('reports/ml/diagnozy_dzienne_lstm.csv')
-    print("Zapisano → reports/ml/diagnozy_dzienne_lstm.csv")
+    os.makedirs('reports/ml/lstm', exist_ok=True)
+    diagnozy.to_csv('reports/ml/lstm/diagnozy_dzienne_lstm.csv')
+    print("Zapisano → reports/ml/lstm/diagnozy_dzienne_lstm.csv")
 
-    # -- Wykres porównawczy z RF (jeśli dostępny) --
-    _wykres_porownanie_rf_lstm('reports/ml/walidacja_czasowa.csv', wyniki_walidacji)
+    _wykres_porownanie_rf_lstm('reports/ml/rf/walidacja_czasowa.csv', wyniki_walidacji)
 
-    print(f"\n=== Przykładowa diagnoza LSTM ({daty_seq[-1].date()}) ===")
+    print(f"Przykładowa diagnoza LSTM ({daty_seq[-1].date()})")
     ostatnia = diagnozy.iloc[-1]
-    print(f"  Ryzyko             : {ostatnia['ryzyko'].upper()}")
-    print(f"  Prawdopodobieństwo : {ostatnia['prawdopodobienstwo']:.0%}")
-    print(f"  Kierunek           : {ostatnia['kierunek']}")
+    print(f"Ryzyko: {ostatnia['ryzyko'].upper()}")
+    print(f"Prawdopodobieństwo: {ostatnia['prawdopodobienstwo']:.0%}")
+    print(f"Kierunek: {ostatnia['kierunek']}")
 
     return diagnozy
-
-
-# ── PUNKT WEJŚCIA ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     final = pd.read_csv(
