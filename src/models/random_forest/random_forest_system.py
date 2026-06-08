@@ -277,6 +277,8 @@ def _wykres_walidacja(wyniki_walidacji: pd.DataFrame):
         ax.legend()
         ax.set_ylim(0, 1)
         ax.axhline(0.5, color='gray', linestyle=':', alpha=0.5)
+        ax.set_xticks(wyniki_walidacji['Rok'])
+        ax.set_xticklabels(wyniki_walidacji['Rok'].astype(int))  
 
     plt.suptitle(
         f'Walidacja czasowa RF (target: ≥{EPIZOD_MIN_STACJI} stacje p{int(EPIZOD_PERCENTYL * 100)}, thresh={PROB_THRESHOLD})',
