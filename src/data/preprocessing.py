@@ -196,7 +196,7 @@ def clean_port_polnocny_and_day_step(df):
     df['Poziom wody [m]'] = df['Poziom wody [m]'].astype(str).str.replace(',', '.')
     df['Poziom wody [m]'] = pd.to_numeric(df['Poziom wody [m]'], errors='coerce')
 
-    df.loc[(df['Poziom wody [m]'] < 0) | (df['Poziom wody [m]'] > 10), 'Poziom wody [m]'] = np.nan
+    df.loc[(df['Poziom wody [m]'] < 4.5) | (df['Poziom wody [m]'] > 7), 'Poziom wody [m]'] = np.nan
 
     df = df.dropna(subset=['Poziom wody [m]'])
 

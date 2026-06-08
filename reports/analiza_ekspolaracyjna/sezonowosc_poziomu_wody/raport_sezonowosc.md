@@ -1,15 +1,16 @@
 ## Rozdział: Wyniki analizy eksploracyjnej
 
-### 4.1. Sezonowość poziomu wody (Rzeka Strzyża, 2021-2025)
+### 4.1. Sezonowość poziomu wody w układzie Zatoka-Rzeka (2021-2025)
 
-**Przebieg długoterminowy i ekstrema**
+**Przebieg długoterminowy i synchronizacja zjawisk**
 
-Analiza szeregu czasowego z lat 2021–2025 wskazuje, że średni dobowy poziom wody na rzece Strzyża wykazuje zauważalne wahania sezonowe, przerywane krótkotrwałymi wezbraniami. Po odfiltrowaniu błędów aparatury pomiarowej, wykres przebiegu dobowego uwidacznia, że najwyższe udokumentowane szczyty maksymalnego poziomu wody sięgają pułapu około 1,3 metra (wystąpiły m.in. na początku 2022 roku oraz pod koniec roku 2025). Najbardziej znaczące piki koncentrują się w chłodniejszej połowie roku.
+Analiza szeregów czasowych z lat 2021–2025 dla trzech punktów pomiarowych (Strzyża, Martwa Wisła, Port Północny) ujawnia niemal perfekcyjną synchronizację wahań poziomu wody. Wykresy przebiegu dobowego pokazują, że najwyższe piki wezbraniowe (np. początek 2022 i koniec 2025 roku) oraz najgłębsze spadki występują na wszystkich trzech stacjach dokładnie w tym samym czasie. 
+Taka charakterystyka dowodzi, że cały badany węzeł wodny funkcjonuje jak system naczyń połączonych, w którym głównym dyktatorem warunków hydrologicznych jest Zatoka Gdańska (reprezentowana przez Port Północny), a wpływ lokalnych zjawisk wewnątrz zlewni (własny nurt Strzyży) schodzi na dalszy plan w obliczu dominujących wezbrań morskich.
 
-**Zmienność miesięczna i pory roku**
+**Zmienność miesięczna i sezonowa**
 
-Na podstawie analizy rozkładów wartości (wykresy pudełkowe) zaobserwowano wyraźną sezonowość w zachowaniu rzeki:
+Analiza rozkładów wartości (wykresy pudełkowe) wskazuje na spójną sezonowość dla całego układu, niezależnie od odległości od otwartego morza:
 
-* **Miesiące o najwyższym stanie wód:** Najwyższe mediany poziomu wody notowane są w sezonie **zimowym**, ze szczególnym uwzględnieniem **stycznia i lutego**. W warunkach gdańskich (ujście rzeki) może to być bezpośrednio związane z zimowymi układami niżowymi, sztormami i zjawiskiem tzw. "cofki" wiatrowej od strony morza, a także z opadami i ewentualnymi roztopami.
-* **Miesiące niżówkowe:** Wbrew intuicji, najniższe stany wód (zarówno pod kątem średnich, jak i wartości minimalnych) charakteryzują na tej rzece **wiosnę**, osiągając absolutne minimum w **maju** (miesiąc 5). Prawdopodobnie wynika to z mniejszej sumy opadów połączonej z intensywnym poborem wody przez budzącą się do życia roślinność w zlewni.
-* **Występowanie anomalii (ekstremów):** Analiza wartości odstających (punktów powyżej tzw. wąsów na wykresach pudełkowych) wskazuje, że najbardziej skrajne odchylenia od normy dla średniego poziomu dobowego występują w **styczniu** (wartości rzędu 0,8–0,9 m). Zima jest zatem okresem najbardziej dynamicznym hydrologicznie. Warto również zauważyć, że choć lato ma wyższą medianę niż wiosna czy jesień, to po usunięciu szumu pomiarowego nie wykazuje już tak drastycznych anomalii uśrednionego poziomu dobowego, co sugeruje, że letnie opady burzowe mają charakter bardzo krótkotrwały i nie podnoszą średniej dobowej tak mocno, jak długotrwałe niże zimowe.
+* **Miesiące niżówkowe (Wiosna):** Zdecydowanie najniższe stany wód notowane są w sezonie wiosennym, z wyraźnym minimum przypadającym na **maj**. Mediany dla tego miesiąca są najniższe na wszystkich trzech stacjach. Wynika to z uspokojenia cyrkulacji atmosferycznej nad Bałtykiem po okresie zimowym oraz braku głębokich niżów pompujących wodę do zatoki.
+* **Miesiące o najwyższym stanie i największej dynamice (Zima):** Najwyższe średnie poziomy wody charakteryzują porę zimową (**styczeń i luty**). Zima jest również okresem o największej wariancji (najdłuższe wąsy na wykresach pudełkowych) oraz największej liczbie wartości odstających "w górę" na każdej ze stacji. Potwierdza to ścisły związek ekstremalnych wezbrań z zimowym sezonem sztormowym na Bałtyku i zjawiskiem cofki wiatrowej.
+* **Letnie i jesienne odpływy wiatrowe:** Bardzo ciekawym zjawiskiem, widocznym szczególnie wyraźnie na stacji Port Północny w lipcu, jest obecność skrajnych wartości odstających "w dół" (spadki poziomu wody poniżej 4,7 m). Są to klasyczne zjawiska odpływów wiatrowych, występujące, gdy silne i długotrwałe wiatry z południa i wschodu odpychają masy wody z Zatoki Gdańskiej na otwarte morze, co błyskawicznie "odsysa" wodę również z Martwej Wisły i koryta Strzyży.

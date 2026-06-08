@@ -1,0 +1,13 @@
+### 4.2. Zależności poziom wody – warunki meteorologiczne
+
+**Wpływ opadów skumulowanych (72h)**
+
+Analiza wykresów rozrzutu (zależność maksymalnego poziomu wody od sumy opadów z 3 poprzedzających dni) dla wszystkich trzech stacji pomiarowych dostarcza jednoznacznych wniosków na temat roli opadów w badanym węźle wodnym:
+* **Brak korelacji dla ekstremów:** We wszystkich trzech punktach układu (Strzyża, Martwa Wisła, Port Północny) absolutnie najwyższe stany wód występują niemal wyłącznie w dniach o znikomym lub zerowym opadzie skumulowanym (głównie w porze zimowej – punkty niebieskie). Oznacza to, że opad atmosferyczny nie jest bezpośrednim czynnikiem wyzwalającym stany alarmowe w tym regionie.
+* **Marginalny wpływ letnich ulew:** Bardzo wysokie sumy opadów (przekraczające 60–80 mm w ciągu 72 godzin) notowane są wyłącznie latem (zielone punkty). Choć wywołują one zauważalne, krótkotrwałe wezbrania na rzece Strzyża, ich wpływ na Martwą Wisłę i Port Północny jest praktycznie niezauważalny. Zdolność retencyjna i objętość akwenów morskich całkowicie buforują te opady, co potwierdza, że zagrożenie powodziowe latem ma tu charakter wyłącznie lokalny (tzw. powodzie błyskawiczne w uszczelnionej zlewni Strzyży), a nie systemowy.
+
+**Wpływ dynamiki ciśnienia atmosferycznego (proxy wiatru i sztormów)**
+
+Wykresy zależności poziomu wody od dobowej zmiany ciśnienia atmosferycznego (wskaźnik `Ciśnienie_delta_1d` użyty jako proxy dla przechodzących frontów i siły wiatru) bezsprzecznie tłumaczą genezę ekstremów hydrologicznych w całym systemie:
+* **"Lejek" zmienności układu:** Wszystkie trzy stacje wykazują identyczny, charakterystyczny kształt lejka. W dniach o stabilnej sytuacji barycznej (zmiana ciśnienia bliska 0 hPa) poziom wody jest przewidywalny i skupiony w wąskim przedziale bliskim średniej. Jednak wraz ze wzrostem dynamiki ciśnienia – co oznacza nadciągające głębokie niże lub silne wyże – rozrzut i wariancja poziomu wody drastycznie rosną na każdej ze stacji.
+* **Dominacja zjawisk morskich (cofki i odpływy):** Historyczne maksima (sztormowe wezbrania zimowe) oraz skrajne minima (odpływy wiatrowe) występują przy wahaniach ciśnienia przekraczających 10–20 hPa/dobę. Fakt, że zależność ta jest tak samo silna dla otwartego Portu Północnego, jak i ujściowego odcinka rzeki Strzyży, stanowi twardy dowód na to, że ekstremalne zjawiska hydrologiczne w Gdańsku są napędzane mechanicznie od strony morza. To silne wiatry i zmiana ciśnienia na Bałtyku "wtłaczają" lub "wypychają" wodę z systemu, czyniąc parametry cyrkulacyjne kluczowymi predyktorami dla przyszłych modeli predykcyjnych.
