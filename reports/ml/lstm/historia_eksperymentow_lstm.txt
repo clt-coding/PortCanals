@@ -23,18 +23,18 @@ Finalne Precision: 0.386
 Finalne Recall: 0.889
 ----------------------------------------
 
---- EKSPERYMENT LSTM: 2026-06-08 21:45:34 ---
+--- EKSPERYMENT LSTM: 2026-06-08 21:24:05 ---
 PROB_THRESHOLD: 0.5
 PARAMETRY: {'units_1': 64, 'learning_rate': 0.001, 'batch_size': 32, 'epochs': 100, 'patience': 10, 'dropout': 0.5}
-Średnie F1 (walidacja): 0.477
-Finalne Precision: 0.288
-Finalne Recall: 0.878
+Średnie F1 (walidacja): 0.482
+Finalne Precision: 0.423
+Finalne Recall: 0.861
 ----------------------------------------
 
---- EKSPERYMENT LSTM: 2026-06-08 21:51:20 ---
+--- EKSPERYMENT LSTM: 2026-06-08 21:31:21 ---
 PROB_THRESHOLD: 0.5
 PARAMETRY: {'units_1': 64, 'learning_rate': 0.001, 'batch_size': 32, 'epochs': 100, 'patience': 10, 'dropout': 0.5}
-Średnie F1 (walidacja): 0.459
-Finalne Precision: 0.333
-Finalne Recall: 0.928
+Średnie F1 (walidacja): 0.462
+Finalne Precision: 0.432
+Finalne Recall: 0.889
 ----------------------------------------
