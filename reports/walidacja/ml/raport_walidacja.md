@@ -73,9 +73,7 @@ Analiza dokładności wskazania momentu oraz wysokości maksymalnego poziomu wod
 | -------------------------------- | ---------- |
 | Liczba dopasowanych epizodów     | 33         |
 | Średni błąd czasu piku           | -0,39 dnia |
-| Odchylenie standardowe           | 3,46 dnia  |
 | Średni błąd wysokości piku       | +0,0418    |
-| Odchylenie standardowe wysokości | 0,1326     |
 
 Interpretacja:
 * maksimum wezbrania jest wskazywane średnio niecałe pół dnia wcześniej niż w rzeczywistości,

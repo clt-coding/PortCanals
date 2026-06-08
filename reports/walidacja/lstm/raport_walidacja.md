@@ -71,18 +71,11 @@ Interpretacja:
 ## 7.4. Błąd piku wezbrania
 Metryka ocenia dokładność określenia momentu wystąpienia maksimum wezbrania oraz wartości maksymalnego poziomu wody.
 
-| Metryka                    | Wartość    |
-| -------------------------- | ---------- |
-| Średni błąd czasu piku     | -3,58 dnia |
-| Średni błąd wysokości piku | +0,1477    |
-
 | Metryka                          | Wartość    |
 | -------------------------------- | ---------- |
 | Liczba dopasowanych epizodów     | 31         |
 | Średni błąd czasu piku           | -3.58 dni  |
-| Odchylenie standardowe           | 8.64 dnia  |
 | Średni błąd wysokości piku       | +0,1477    |
-| Odchylenie standardowe wysokości | 0,2288     |
 
 Interpretacja:
 * maksimum wezbrania jest wskazywane średnio około **3,6 dnia wcześniej** niż ma to miejsce w rzeczywistości.
