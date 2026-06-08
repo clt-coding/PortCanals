@@ -22,7 +22,7 @@ STACJE_SREDNIA = {
 # 1. SEZONOWOŚĆ POZIOMU WODY
 # ==========================================
 
-def plot_przebieg_dobowy(df, base_dir='../reports/analiza_ekspolaracyjna/sezonowosc_poziomu_wody/plots'):
+def plot_przebieg_dobowy(df, base_dir='../reports/analiza_eksploracyjna/sezonowosc_poziomu_wody/plots'):
     os.makedirs(base_dir, exist_ok=True)
     fig, axes = plt.subplots(3, 1, figsize=(15, 12), sharex=True)
 
@@ -41,7 +41,7 @@ def plot_przebieg_dobowy(df, base_dir='../reports/analiza_ekspolaracyjna/sezonow
     plt.close()
 
 
-def plot_sezonowosc_pory_roku(df, base_dir='../reports/analiza_ekspolaracyjna/sezonowosc_poziomu_wody/plots'):
+def plot_sezonowosc_pory_roku(df, base_dir='../reports/analiza_eksploracyjna/sezonowosc_poziomu_wody/plots'):
     os.makedirs(base_dir, exist_ok=True)
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
@@ -60,7 +60,7 @@ def plot_sezonowosc_pory_roku(df, base_dir='../reports/analiza_ekspolaracyjna/se
     plt.close()
 
 
-def plot_sezonowosc_miesiace(df, base_dir='../reports/analiza_ekspolaracyjna/sezonowosc_poziomu_wody/plots'):
+def plot_sezonowosc_miesiace(df, base_dir='../reports/analiza_eksploracyjna/sezonowosc_poziomu_wody/plots'):
     os.makedirs(base_dir, exist_ok=True)
     fig, axes = plt.subplots(3, 1, figsize=(14, 15), sharex=True)
 
@@ -82,7 +82,7 @@ def plot_sezonowosc_miesiace(df, base_dir='../reports/analiza_ekspolaracyjna/sez
 # 2. ZALEŻNOŚCI METEO
 # ==========================================
 
-def plot_zaleznosc_opad_woda(df, base_dir='../reports/analiza_ekspolaracyjna/zaleznosci_poziomu_wody/plots'):
+def plot_zaleznosc_opad_woda(df, base_dir='../reports/analiza_eksploracyjna/zaleznosci_poziomu_wody/plots'):
     os.makedirs(base_dir, exist_ok=True)
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
@@ -98,7 +98,7 @@ def plot_zaleznosc_opad_woda(df, base_dir='../reports/analiza_ekspolaracyjna/zal
     plt.close()
 
 
-def plot_zaleznosc_opad_woda_sezony(df, base_dir='../reports/analiza_ekspolaracyjna/zaleznosci_poziomu_wody/plots'):
+def plot_zaleznosc_opad_woda_sezony(df, base_dir='../reports/analiza_eksploracyjna/zaleznosci_poziomu_wody/plots'):
     os.makedirs(base_dir, exist_ok=True)
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
@@ -116,7 +116,7 @@ def plot_zaleznosc_opad_woda_sezony(df, base_dir='../reports/analiza_ekspolaracy
     plt.close()
 
 
-def plot_zaleznosc_cisnienie_woda(df, base_dir='../reports/analiza_ekspolaracyjna/zaleznosci_poziomu_wody/plots'):
+def plot_zaleznosc_cisnienie_woda(df, base_dir='../reports/analiza_eksploracyjna/zaleznosci_poziomu_wody/plots'):
     os.makedirs(base_dir, exist_ok=True)
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
@@ -139,7 +139,7 @@ def plot_zaleznosc_cisnienie_woda(df, base_dir='../reports/analiza_ekspolaracyjn
 # 3. ANALIZA OPÓŹNIEŃ (LAGS)
 # ==========================================
 
-def plot_korelacja_opoznien(df, base_dir='../reports/analiza_ekspolaracyjna/analiza_opoznien/plots'):
+def plot_korelacja_opoznien(df, base_dir='../reports/analiza_eksploracyjna/analiza_opoznien/plots'):
     os.makedirs(base_dir, exist_ok=True)
     lagi_opadu = ['Opad_suma', 'Opad_lag_1d', 'Opad_lag_2d', 'Opad_lag_3d']
     nazwy_lagow = ['W tym samym dniu', '1 dzień po', '2 dni po', '3 dni po']
@@ -162,7 +162,7 @@ def plot_korelacja_opoznien(df, base_dir='../reports/analiza_ekspolaracyjna/anal
     plt.close()
 
 
-def plot_scatter_opoznienia(df, base_dir='../reports/analiza_ekspolaracyjna/analiza_opoznien/plots'):
+def plot_scatter_opoznienia(df, base_dir='../reports/analiza_eksploracyjna/analiza_opoznien/plots'):
     os.makedirs(base_dir, exist_ok=True)
     fig, axes = plt.subplots(3, 3, figsize=(16, 12), sharex=True, sharey='row')
 
@@ -210,13 +210,6 @@ if __name__ == "__main__":
             index_col='Data'
         )
 
-        # USUWANIE ANOMALII Z PORTU PÓŁNOCNEGO
-        print("Filtrowanie błędów aparatury...")
-        final.loc[final['Port_Polnocny_max'] < 4.0, 'Port_Polnocny_max'] = np.nan
-        final.loc[final['Port_Polnocny_średnia'] < 4.0, 'Port_Polnocny_średnia'] = np.nan
-
-        print("Generowanie i zapisywanie plików do folderów...")
-
         # 1. Sezonowość
         plot_przebieg_dobowy(final)
         plot_sezonowosc_pory_roku(final)
@@ -231,6 +224,6 @@ if __name__ == "__main__":
         plot_korelacja_opoznien(final)
         plot_scatter_opoznienia(final)
 
-        print("Gotowe! Wszystkie wykresy zapisane w folderze ../reports/analiza_ekspolaracyjna/")
+        print("Gotowe! Wszystkie wykresy zapisane w folderze ../reports/analiza_eksploracyjna/")
     else:
         print(f"Błąd: Nie znaleziono pliku {sciezka_do_pliku}.")
