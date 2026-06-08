@@ -73,7 +73,7 @@ MIN_TRAIN_YEARS   = 2
 
 # ── HIPERPARAMETRY LSTM ───────────────────────────────────────────────────────
 
-# Ile poprzednich dni model „widzi" przy jednej predykcji.
+# Ile poprzednich dni models „widzi" przy jednej predykcji.
 # Wartość 7 oznacza: cechy z dni t-6…t → predykcja na dzień t.
 # Dobrana eksperymentalnie: mniejsze okno (<5) gubi trendy sezonowe,
 # większe (>14) wydłuża trening i może powodować overfitting na małym zbiorze.
@@ -336,7 +336,7 @@ def trenuj_model(X_seq: np.ndarray, y_seq: np.ndarray) -> Sequential:
 # ── 5. WYKRESY ────────────────────────────────────────────────────────────────
 
 def _wykres_walidacja(wyniki_walidacji: pd.DataFrame):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
     for ax, metryki, tytul in zip(
@@ -369,7 +369,7 @@ def _wykres_walidacja(wyniki_walidacji: pd.DataFrame):
 
 
 def _wykres_confusion(y_true, y_pred):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Oranges',
@@ -385,7 +385,7 @@ def _wykres_confusion(y_true, y_pred):
 
 
 def _wykres_historia_treningu(history):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
     axes[0].plot(history.history['loss'],     label='train loss')
@@ -485,7 +485,7 @@ def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
     print(f"  target: ≥{EPIZOD_MIN_STACJI} stacje p{int(EPIZOD_PERCENTYL*100)}")
     print(f"{'='*60}\n")
 
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
 
     # -- Walidacja czasowa --
     wyniki_walidacji = walidacja_czasowa(final)
@@ -573,7 +573,7 @@ def uruchom_system_lstm(final: pd.DataFrame) -> pd.DataFrame:
     print("Zapisano → reports/ml/diagnozy_dzienne_lstm.csv")
 
     # -- Wykres porównawczy z RF (jeśli dostępny) --
-    _wykres_porownanie_rf_lstm('reports/ml/walidacja_czasowa.csv', wyniki_walidacji)
+    _wykres_porownanie_rf_lstm('../src/data/reports/ml/walidacja_czasowa.csv', wyniki_walidacji)
 
     print(f"\n=== Przykładowa diagnoza LSTM ({daty_seq[-1].date()}) ===")
     ostatnia = diagnozy.iloc[-1]

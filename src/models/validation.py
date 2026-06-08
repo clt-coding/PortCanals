@@ -1,6 +1,14 @@
 """
-Moduł 7: Walidacja i benchmark – pełne metryki jakości modeli (RF / LSTM)
+Moduł 7: Walidacja i benchmark – pełne metryki jakości modelu RF
 dla wykrywania epizodów wysokiej wody.
+
+Metryki zaimplementowane:
+  1. Błąd onset/offset epizodu        – o ile dni models myli start/koniec wezbrania
+  2. Event-level recall (pokrycie)     – % rzeczywistych epizodów wykrytych
+  3. False alarm rate / precision      – % fałszywych alarmów
+  4. Błąd piku (peak timing + magnitude) – błąd dnia i wartości maksimum
+  5. MAE/RMSE poziomu wody (regresja)  – w epizodzie i poza nim osobno
+  6. Stabilność sezonowa               – metryki per sezon i rok-po-roku
 """
 
 import os
@@ -31,12 +39,11 @@ SEZONY_DEF = {
 }
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+_ROOT = os.path.abspath(os.path.join(_HERE, "..", "..",".."))
 OUTPUT_DIR = os.path.join(_ROOT, "reports", "walidacja")
 
 KOLORY = {
     "RF":        "#2a7fba",
-    "LSTM":      "#ff9800",
     "benchmark": "#e05c3a",
     "neutral":   "#999999",
     "episode":   "#d4380d",
@@ -53,6 +60,10 @@ def _sezon(miesiac: int) -> str:
     return "?"
 
 def _znajdz_epizody_ciagłe(seria: pd.Series, min_dl: int = 1) -> List[Tuple[pd.Timestamp, pd.Timestamp]]:
+    """
+    Zwraca listę (start, koniec) ciągłych bloków 1 w serii binarnej.
+    Parametr min_dl pozwala filtrować jednodniowe artefakty.
+    """
     epizody = []
     w_epizodzie = False
     start = None
@@ -71,10 +82,15 @@ def _znajdz_epizody_ciagłe(seria: pd.Series, min_dl: int = 1) -> List[Tuple[pd.
 
 def _tolerancja_pokrycia(ep_true: Tuple, ep_pred_lista: List[Tuple],
                           tolerancja_dni: int = 2) -> bool:
+    """
+    Sprawdza, czy epizod rzeczywisty ep_true jest pokryty przez co najmniej
+    jeden epizod predykowany (z tolerancją ±tolerancja_dni na granicach).
+    """
     s_true, e_true = ep_true
     s_tol = s_true - pd.Timedelta(days=tolerancja_dni)
     e_tol = e_true + pd.Timedelta(days=tolerancja_dni)
     for s_p, e_p in ep_pred_lista:
+        # nakładanie się po uwzględnieniu tolerancji
         if s_p <= e_tol and e_p >= s_tol:
             return True
     return False
@@ -85,14 +101,11 @@ class BenchmarkValidator:
     df_poziomy: Optional[pd.DataFrame] = None
     prob_threshold: float = 0.50
     tolerancja_dni: int = 2
-    model_name: str = "rf"  # Dynamiczny wybór subfolderu zapisu ("rf" lub "lstm")
     # wewnętrzne
     _wyniki: Dict = field(default_factory=dict, init=False, repr=False)
 
     def __post_init__(self):
-        # Dynamiczne tworzenie folderu dedykowanego pod konkretny model
-        self.target_dir = os.path.join(OUTPUT_DIR, self.model_name)
-        os.makedirs(self.target_dir, exist_ok=True)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
         self._przygotuj_kolumny()
 
     # ── PRZYGOTOWANIE ─────────────────────────────────────────────────────────
@@ -118,12 +131,18 @@ class BenchmarkValidator:
     # ── 1. BŁĄD ONSET / OFFSET ────────────────────────────────────────────────
 
     def metryki_onset_offset(self) -> pd.DataFrame:
+        """
+        Dla każdego rzeczywistego epizodu szuka najbliższego predykowanego,
+        oblicza błąd startu (onset_error_dni) i końca (offset_error_dni).
+        Wartości dodatnie = models spóźniony; ujemne = models za wczesny.
+        """
         d = self._d
         ep_true = _znajdz_epizody_ciagłe(d['y_true'])
         ep_pred = _znajdz_epizody_ciagłe(d['y_pred'])
 
         rekordy = []
         for (st, et) in ep_true:
+            # znajdź predykowany epizod z największym nakładaniem
             najlepszy = None
             max_overlap = pd.Timedelta(0)
             for (sp, ep) in ep_pred:
@@ -133,6 +152,7 @@ class BenchmarkValidator:
                     najlepszy = (sp, ep)
 
             if najlepszy is None:
+                # brak dopasowania – epizod nieykryty
                 rekordy.append({
                     'ep_start':        st,
                     'ep_koniec':       et,
@@ -150,19 +170,22 @@ class BenchmarkValidator:
                     'ep_koniec':       et,
                     'dl_dni':          (et - st).days + 1,
                     'wykryty':         True,
-                    'onset_error_dni': (sp - st).days,
-                    'offset_error_dni':(ep - et).days,
+                    'onset_error_dni': (sp - st).days,    # + = spóźniony
+                    'offset_error_dni':(ep - et).days,    # + = za długi
                     'pred_start':      sp,
                     'pred_koniec':     ep,
                 })
 
         df_oo = pd.DataFrame(rekordy)
         self._wyniki['onset_offset'] = df_oo
-        return df_oo  
+        return df_oo
 
     # ── 2. EVENT-LEVEL RECALL (pokrycie) ──────────────────────────────────────
 
     def event_recall(self, tolerancja_dni: Optional[int] = None) -> Dict:
+        """
+        Event-level: ile % rzeczywistych epizodów zostało wykrytych
+        """
         tol = tolerancja_dni if tolerancja_dni is not None else self.tolerancja_dni
         d = self._d
         ep_true = _znajdz_epizody_ciagłe(d['y_true'])
@@ -189,8 +212,9 @@ class BenchmarkValidator:
         ep_pred = _znajdz_epizody_ciagłe(d['y_pred'])
 
         prec_day = precision_score(d['y_true'], d['y_pred'], zero_division=0)
-        far_day  = 1 - prec_day
+        far_day  = 1 - prec_day  # false alarm rate (dzienne)
 
+        # event-level: ile predykowanych epizodów NIE nakłada się z żadnym prawdziwym
         fa_epizody = sum(
             1 for ep in ep_pred
             if not _tolerancja_pokrycia(ep, ep_true, self.tolerancja_dni)
@@ -199,10 +223,10 @@ class BenchmarkValidator:
 
         wynik = {
             'precision_day':     round(prec_day, 3),
-            'far_day':           round(far_day, 3),
+            'far_day':           round(far_day, 3),           # 1-precision
             'n_pred_epizodow':   len(ep_pred),
             'n_fa_epizodow':     fa_epizody,
-            'far_event':         round(fa_rate_ev, 3),
+            'far_event':         round(fa_rate_ev, 3),        # event FAR
         }
         self._wyniki['false_alarm'] = wynik
         return wynik
@@ -210,6 +234,11 @@ class BenchmarkValidator:
     # ── 4. BŁĄD PIKU ──────────────────────────────────────────────────────────
 
     def peak_error(self, col_poziom: str = 'Poziom_wody_max') -> pd.DataFrame:
+        """
+        Dla każdego wykrytego epizodu oblicza:
+          - peak_timing_error_dni : różnica dnia maksimum (pred vs true)
+          - peak_magnitude_error  : różnica wartości maksimum (pred vs true)
+        """
         d = self._d
         ep_true = _znajdz_epizody_ciagłe(d['y_true'])
         ep_pred = _znajdz_epizody_ciagłe(d['y_pred'])
@@ -221,6 +250,7 @@ class BenchmarkValidator:
 
         rekordy = []
         for (st, et) in ep_true:
+            # znajdź najlepiej nakładający się pred-epizod
             najlepszy = None
             max_overlap = pd.Timedelta(0)
             for (sp, ep) in ep_pred:
@@ -230,13 +260,18 @@ class BenchmarkValidator:
                     najlepszy = (sp, ep)
 
             if najlepszy is None:
-                continue
+                continue  # nieykryty – pominięty
 
             sp, ep = najlepszy
 
+            # okno nakładania
+            okno_true = d.loc[st:et, 'y_true']
+            okno_pred = d.loc[sp:ep, 'y_pred']
+
+            # timing error: dzień max-prawdopodobieństwa w oknie pred vs środek prawdziwego epizodu
             okno_proba = d.loc[sp:ep, 'prawdopodobienstwo']
             dzien_peak_pred = okno_proba.idxmax()
-            dzien_peak_true = st + (et - st) / 2
+            dzien_peak_true = st + (et - st) / 2  # środek epizodu jako proxy
 
             timing_error = (dzien_peak_pred - dzien_peak_true).days
 
@@ -263,7 +298,13 @@ class BenchmarkValidator:
 
     # ── 5. MAE/RMSE POZIOMU WODY ──────────────────────────────────────────────
 
-    def metryki_regresji(self, col_poziom: str = 'Poziom_wody_max') -> Dict:
+    def metryki_regresji(self,
+                         col_poziom: str = 'Poziom_wody_max') -> Dict:
+        """
+        Oblicza MAE i RMSE dla kolumny poziomu wody, osobno:
+          - w dniach epizodowych (y_true==1)
+          - poza epizodami (y_true==0)
+        """
         if self.df_poziomy is None or col_poziom not in self.df_poziomy.columns:
             return {'uwaga': f'df_poziomy lub kolumna {col_poziom} niedostępna'}
 
@@ -303,7 +344,10 @@ class BenchmarkValidator:
             'RMSE_w_epizodzie':     rmse_ep,
             'MAE_poza_epizodem':    mae_nep,
             'RMSE_poza_epizodem':   rmse_nep,
-            'uwaga': f'Metryki oparte na skalowanym P(epizod) dla modelu {self.model_name.upper()}.',
+            'uwaga': (
+                'Metryki regresyjne oparte na skalowanym P(epizod) jako proxy '
+                'dla poziomu wody. Dla prawdziwej regresji dodaj moduł regresyjny RF.'
+            ),
         }
         self._wyniki['regresja'] = wynik
         return wynik
@@ -311,7 +355,13 @@ class BenchmarkValidator:
     # ── 6. STABILNOŚĆ SEZONOWA ────────────────────────────────────────────────
 
     def stabilnosc_sezonowa(self) -> pd.DataFrame:
+        """
+        Metryki day-level (recall, precision, F1) obliczone:
+          a) per sezon (zima/wiosna/lato/jesień)
+          b) per rok (rok-po-roku)
+        """
         d = self._d
+
         rekordy = []
 
         # --- per sezon ---
@@ -369,9 +419,10 @@ class BenchmarkValidator:
     # ── PEŁNY RAPORT ─────────────────────────────────────────────────────────
 
     def pelny_raport(self, col_poziom: str = 'Poziom_wody_max') -> Dict:
-        print(f"\n  MODUL 7: BENCHMARK I METRYKI - WALIDACJA MODELU {self.model_name.upper()}")
+        print(f"  MODUL 7: BENCHMARK I METRYKI - WALIDACJA WYNIKOW")
         print(f"  prog klasyfikacji: {self.prob_threshold}  |  tolerancja: {self.tolerancja_dni} dni")
 
+        # 1. Onset / Offset
         df_oo = self.metryki_onset_offset()
         oo_w  = df_oo[df_oo['wykryty']]
         oo_n  = df_oo[~df_oo['wykryty']]
@@ -380,9 +431,15 @@ class BenchmarkValidator:
         print(f"  Wykrytych              : {len(oo_w)} ({100*len(oo_w)/max(len(df_oo),1):.1f}%)")
         print(f"  Nieykrytych            : {len(oo_n)} ({100*len(oo_n)/max(len(df_oo),1):.1f}%)")
         if len(oo_w) > 0:
-            print(f"  Onset error  sr.       : {oo_w['onset_error_dni'].mean():+.2f} dni (std={oo_w['onset_error_dni'].std():.2f}, mediana={oo_w['onset_error_dni'].median():+.1f})")
-            print(f"  Offset error sr.       : {oo_w['offset_error_dni'].mean():+.2f} dni (std={oo_w['offset_error_dni'].std():.2f}, mediana={oo_w['offset_error_dni'].median():+.1f})")
+            print(f"  Onset error  sr.       : {oo_w['onset_error_dni'].mean():+.2f} dni"
+                  f"  (std={oo_w['onset_error_dni'].std():.2f},"
+                  f"  mediana={oo_w['onset_error_dni'].median():+.1f})")
+            print(f"  Offset error sr.       : {oo_w['offset_error_dni'].mean():+.2f} dni"
+                  f"  (std={oo_w['offset_error_dni'].std():.2f},"
+                  f"  mediana={oo_w['offset_error_dni'].median():+.1f})")
+            print(f"  (+ = models spozniony, - = za wczesny)")
 
+        # 2. Event recall
         er = self.event_recall()
         print(f"\n=== Pokrycie zdarzen (event-level recall) ===")
         print(f"  Epizodow rzeczywistych : {er['n_epizodow_true']}")
@@ -391,6 +448,7 @@ class BenchmarkValidator:
         print(f"  Nieykrytych            : {er['n_nieykrytych']}")
         print(f"  Event recall           : {er['event_recall']:.3f}")
 
+        # 3. Falszywe alarmy
         fa = self.false_alarm_metrics()
         print(f"\n=== Falszywe alarmy (false alarm rate) ===")
         print(f"  Day-level precision    : {fa['precision_day']:.3f}")
@@ -399,6 +457,7 @@ class BenchmarkValidator:
         print(f"  Falszywe alarmy (ev.)  : {fa['n_fa_epizodow']}  ({100*fa['far_event']:.1f}% pred. epizodow)")
         print(f"  Event FAR              : {fa['far_event']:.3f}")
 
+        # 4. Blad piku
         df_peak = self.peak_error(col_poziom)
         print(f"\n=== Blad piku (peak timing / peak magnitude) ===")
         if len(df_peak) > 0:
@@ -414,175 +473,225 @@ class BenchmarkValidator:
         else:
             print(f"  Brak dopasowanych epizodow.")
 
+        # 5. Regresja
         reg = self.metryki_regresji(col_poziom)
         print(f"\n=== Zgodnosc wartosci poziomu wody (MAE / RMSE) ===")
         if 'MAE_w_epizodzie' in reg:
+            print(f"  Kolumna poziomu        : {reg['col_poziom']}")
+            print(f"  Dni epizodowych        : {reg['n_dni_epizodow']}")
+            print(f"  Dni spokojnych         : {reg['n_dni_poza']}")
             print(f"  MAE  w epizodzie       : {reg['MAE_w_epizodzie']}")
             print(f"  RMSE w epizodzie       : {reg['RMSE_w_epizodzie']}")
             print(f"  MAE  poza epizodem     : {reg['MAE_poza_epizodem']}")
             print(f"  RMSE poza epizodem     : {reg['RMSE_poza_epizodem']}")
+        else:
+            print(f"  {reg.get('uwaga', 'Brak danych')}")
 
+        # 6. Stabilnosc sezonowa
         df_stab = self.stabilnosc_sezonowa()
         df_rok   = df_stab[df_stab['grupowanie'] == 'rok']
         df_sezon = df_stab[df_stab['grupowanie'] == 'sezon']
 
         print(f"\n=== Stabilnosc sezonowa ===")
-        for _, r in df_sezon.iterrows():
-            print(f"  {str(r['klucz']):<10} {r['recall']:>7.3f} {r['precision']:>7.3f} {r['f1']:>7.3f} {r['event_recall']:>9.3f}")
+        if not df_sezon.empty:
+            print(f"  {'Sezon':<10} {'Recall':>7} {'Prec':>7} {'F1':>7} {'EventRec':>9} {'Epizodow':>9}")
+            for _, r in df_sezon.iterrows():
+                print(f"  {str(r['klucz']):<10} {r['recall']:>7.3f} {r['precision']:>7.3f}"
+                      f" {r['f1']:>7.3f} {r['event_recall']:>9.3f} {int(r['n_epizodow']):>9}")
 
         print(f"\n=== Stabilnosc rok-po-roku ===")
-        for _, r in df_rok.iterrows():
-            print(f"  {str(r['klucz']):<8} {r['recall']:>7.3f} {r['precision']:>7.3f} {r['f1']:>7.3f} {r['event_recall']:>9.3f}")
+        if not df_rok.empty:
+            print(f"  {'Rok':<8} {'Recall':>7} {'Prec':>7} {'F1':>7} {'EventRec':>9} {'Epizodow':>9} {'Dni':>6}")
+            for _, r in df_rok.iterrows():
+                print(f"  {str(r['klucz']):<8} {r['recall']:>7.3f} {r['precision']:>7.3f}"
+                      f" {r['f1']:>7.3f} {r['event_recall']:>9.3f}"
+                      f" {int(r['n_epizodow']):>9} {int(r['n_dni']):>6}")
+            print(f"  {'Srednia':<8} {df_rok['recall'].mean():>7.3f} {df_rok['precision'].mean():>7.3f}"
+                  f" {df_rok['f1'].mean():>7.3f} {df_rok['event_recall'].mean():>9.3f}")
 
-        # Zapis do podfolderu dedykowanego pod wybrany model
-        df_oo.to_csv(f"{self.target_dir}/onset_offset.csv", index=False)
-        df_peak.to_csv(f"{self.target_dir}/peak_error.csv", index=False)
-        df_stab.to_csv(f"{self.target_dir}/stabilnosc_sezonowa.csv", index=False)
-        pd.DataFrame([fa]).to_csv(f"{self.target_dir}/false_alarm.csv", index=False)
-        pd.DataFrame([er]).to_csv(f"{self.target_dir}/event_recall.csv", index=False)
+        # Zapis CSV
+        df_oo.to_csv(f"{OUTPUT_DIR}/ml/onset_offset.csv", index=False)
+        df_peak.to_csv(f"{OUTPUT_DIR}/ml/peak_error.csv", index=False)
+        df_stab.to_csv(f"{OUTPUT_DIR}/ml/stabilnosc_sezonowa.csv", index=False)
+        pd.DataFrame([fa]).to_csv(f"{OUTPUT_DIR}/ml/false_alarm.csv", index=False)
+        pd.DataFrame([er]).to_csv(f"{OUTPUT_DIR}/ml/event_recall.csv", index=False)
         if 'MAE_w_epizodzie' in reg:
-            pd.DataFrame([reg]).to_csv(f"{self.target_dir}/regresja.csv", index=False)
-        
+            pd.DataFrame([reg]).to_csv(f"{OUTPUT_DIR}/ml/regresja.csv", index=False)
+        print(f"\nZapisano -> {OUTPUT_DIR}/")
+
         self._rysuj_wszystkie(df_oo, df_stab, df_peak)
-        print(f"\nZapisano raporty i wykresy do -> {self.target_dir}/")
+        print(f"Wykresy  -> {OUTPUT_DIR}/ml/*.png")
+
         return self._wyniki
 
     # ── WYKRESY ──────────────────────────────────────────────────────────────
 
     def _rysuj_wszystkie(self, df_oo, df_stab, df_peak):
-        color_theme = KOLORY["LSTM"] if self.model_name == "lstm" else KOLORY["RF"]
-        self._wykres_onset_offset(df_oo, color_theme)
-        self._wykres_stabilnosc(df_stab, color_theme)
-        self._wykres_peak_error(df_peak, color_theme)
+        self._wykres_onset_offset(df_oo)
+        self._wykres_stabilnosc(df_stab)
+        self._wykres_peak_error(df_peak)
         self._wykres_podsumowanie()
 
-    def _wykres_onset_offset(self, df_oo: pd.DataFrame, color_theme: str):
+    def _wykres_onset_offset(self, df_oo: pd.DataFrame):
         df_w = df_oo[df_oo['wykryty']].copy()
-        if len(df_w) == 0: return
+        if len(df_w) == 0:
+            return
+
         fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-        for ax, col, tytu in zip(axes, ['onset_error_dni', 'offset_error_dni'], ['Błąd początku epizodu (onset)', 'Błąd końca epizodu (offset)']):
+
+        for ax, col, tytu in zip(
+            axes,
+            ['onset_error_dni', 'offset_error_dni'],
+            ['Błąd początku epizodu (onset)', 'Błąd końca epizodu (offset)']
+        ):
             values = df_w[col].dropna()
-            ax.hist(values, bins=15, color=color_theme, edgecolor='white', alpha=0.85)
+            ax.hist(values, bins=15, color=KOLORY["RF"], edgecolor='white', alpha=0.85)
             ax.axvline(0, color='black', linewidth=1.2, linestyle='--')
-            ax.axvline(values.mean(), color=KOLORY["episode"], linewidth=1.5, label=f'Średnia: {values.mean():+.1f} dni')
+            ax.axvline(values.mean(), color=KOLORY["episode"], linewidth=1.5,
+                       label=f'Średnia: {values.mean():+.1f} dni')
             ax.set_title(tytu, fontsize=11)
             ax.set_xlabel('Błąd [dni]  (+ = spóźniony, – = za wczesny)')
             ax.set_ylabel('Liczba epizodów')
             ax.legend()
-        plt.suptitle(f'Błąd onset/offset ({self.model_name.upper()})', fontsize=12, y=1.01)
+
+        plt.suptitle('Błąd onset/offset epizodów wysokiej wody', fontsize=12, y=1.01)
         plt.tight_layout()
-        plt.savefig(f"{self.target_dir}/onset_offset_error.png", dpi=300, bbox_inches='tight')
+        plt.savefig(f"{OUTPUT_DIR}/ml/onset_offset_error.png", dpi=300, bbox_inches='tight')
         plt.close()
 
-    def _wykres_stabilnosc(self, df_stab: pd.DataFrame, color_theme: str):
-        if df_stab.empty: return
-        df_rok = df_stab[df_stab['grupowanie'] == 'rok'].copy()
-        df_sezon = df_stab[df_stab['grupowanie'] == 'sezon'].copy()
+    def _wykres_stabilnosc(self, df_stab: pd.DataFrame):
+        if df_stab.empty:
+            return
+
+        df_rok    = df_stab[df_stab['grupowanie'] == 'rok'].copy()
+        df_sezon  = df_stab[df_stab['grupowanie'] == 'sezon'].copy()
+
         fig, axes = plt.subplots(2, 3, figsize=(16, 9))
+
         metryki = [('recall', 'Recall'), ('precision', 'Precision'), ('f1', 'F1')]
 
+        # Górny rząd: rok-po-roku
         for ax, (col, tytu) in zip(axes[0], metryki):
-            ax.bar(df_rok['klucz'], df_rok[col], color=color_theme, alpha=0.85, width=0.5)
+            if df_rok.empty:
+                ax.set_visible(False)
+                continue
+            ax.bar(df_rok['klucz'], df_rok[col], color=KOLORY["RF"], alpha=0.85, width=0.5)
             ax.set_title(f'{tytu} – rok-po-roku', fontsize=10)
+            ax.set_xlabel('Rok')
+            ax.set_ylabel(tytu)
             ax.set_ylim(0, 1)
-            ax.axhline(df_rok[col].mean(), color=KOLORY["episode"], linestyle='--', label=f'Śr. {df_rok[col].mean():.2f}')
+            ax.axhline(df_rok[col].mean(), color=KOLORY["episode"],
+                       linestyle='--', label=f'Śr. {df_rok[col].mean():.2f}')
             ax.legend(fontsize=8)
 
+        # Dolny rząd: per sezon
         porzadek_sezonow = ["zima", "wiosna", "lato", "jesień"]
         df_sezon['klucz'] = pd.Categorical(df_sezon['klucz'], categories=porzadek_sezonow, ordered=True)
         df_sezon = df_sezon.sort_values('klucz')
+
         for ax, (col, tytu) in zip(axes[1], metryki):
-            ax.bar(df_sezon['klucz'].astype(str), df_sezon[col], color=[color_theme, "#4caf50", "#ff9800", "#9c27b0"][:len(df_sezon)], alpha=0.85, width=0.5)
+            if df_sezon.empty:
+                ax.set_visible(False)
+                continue
+            bars = ax.bar(df_sezon['klucz'].astype(str), df_sezon[col],
+                          color=[KOLORY["RF"], "#4caf50", "#ff9800", "#9c27b0"][:len(df_sezon)],
+                          alpha=0.85, width=0.5)
             ax.set_title(f'{tytu} – sezonowość', fontsize=10)
+            ax.set_xlabel('Sezon')
+            ax.set_ylabel(tytu)
             ax.set_ylim(0, 1)
 
-        plt.suptitle(f'Stabilność sezonowa i rok-po-roku – {self.model_name.upper()}', fontsize=12)
+        plt.suptitle('Stabilność sezonowa i rok-po-roku (metryki day-level)', fontsize=12)
         plt.tight_layout()
-        plt.savefig(f"{self.target_dir}/stabilnosc_sezonowa.png", dpi=300, bbox_inches='tight')
+        plt.savefig(f"{OUTPUT_DIR}/ml/stabilnosc_sezonowa.png", dpi=300, bbox_inches='tight')
         plt.close()
 
-    def _wykres_peak_error(self, df_peak: pd.DataFrame, color_theme: str):
-        if df_peak.empty: return
+    def _wykres_peak_error(self, df_peak: pd.DataFrame):
+        if df_peak.empty:
+            return
+
         fig, ax = plt.subplots(figsize=(8, 4))
         values = df_peak['peak_timing_error_dni'].dropna()
-        ax.hist(values, bins=15, color=color_theme, edgecolor='white', alpha=0.85)
+        ax.hist(values, bins=15, color=KOLORY["RF"], edgecolor='white', alpha=0.85)
         ax.axvline(0, color='black', linewidth=1.2, linestyle='--')
-        ax.axvline(values.mean(), color=KOLORY["episode"], linewidth=1.5, label=f'Średnia: {values.mean():+.1f} dni')
-        ax.set_title(f'Błąd czasu piku ({self.model_name.upper()})', fontsize=11)
-        ax.set_xlabel('Błąd [dni]  (+ = model pokazuje pik za późno)')
+        ax.axvline(values.mean(), color=KOLORY["episode"], linewidth=1.5,
+                   label=f'Średnia: {values.mean():+.1f} dni')
+        ax.set_title('Błąd czasu piku (peak timing error)', fontsize=11)
+        ax.set_xlabel('Błąd [dni]  (+ = models pokazuje pik za późno)')
         ax.set_ylabel('Liczba epizodów')
         ax.legend()
         plt.tight_layout()
-        plt.savefig(f"{self.target_dir}/peak_timing_error.png", dpi=300)
+        plt.savefig(f"{OUTPUT_DIR}/ml/peak_timing_error.png", dpi=300)
         plt.close()
 
     def _wykres_podsumowanie(self):
+        """
+        Heatmapa stabilności: sezon × rok → F1.
+        """
         d = self._d.copy()
-        sezony, lata = ["zima", "wiosna", "lato", "jesień"], sorted(d['rok'].unique())
+        sezony = ["zima", "wiosna", "lato", "jesień"]
+        lata = sorted(d['rok'].unique())
+
         macierz = pd.DataFrame(index=sezony, columns=lata, dtype=float)
+
         for rok in lata:
             for sezon in sezony:
                 maska = (d['rok'] == rok) & (d['sezon'] == sezon)
                 sub = d[maska]
-                if len(sub) > 0 and sub['y_true'].sum() > 0:
-                    macierz.loc[sezon, rok] = round(f1_score(sub['y_true'], sub['y_pred'], zero_division=0), 2)
+                if len(sub) == 0 or sub['y_true'].sum() == 0:
+                    macierz.loc[sezon, rok] = np.nan
+                else:
+                    macierz.loc[sezon, rok] = round(
+                        f1_score(sub['y_true'], sub['y_pred'], zero_division=0), 2
+                    )
+
         fig, ax = plt.subplots(figsize=(max(6, len(lata) * 1.3), 4))
-        sns.heatmap(macierz.astype(float), annot=True, fmt='.2f', cmap='RdYlGn', vmin=0, vmax=1, linewidths=0.5, ax=ax, cbar_kws={'label': 'F1'})
-        ax.set_title(f'Mapa stabilności F1 ({self.model_name.upper()})', fontsize=12)
+        sns.heatmap(
+            macierz.astype(float), annot=True, fmt='.2f',
+            cmap='RdYlGn', vmin=0, vmax=1,
+            linewidths=0.5, ax=ax, cbar_kws={'label': 'F1'}
+        )
+        ax.set_title('Mapa stabilności F1 (sezon × rok)', fontsize=12)
+        ax.set_xlabel('Rok')
+        ax.set_ylabel('Sezon')
         plt.tight_layout()
-        plt.savefig(f"{self.target_dir}/heatmapa_stabilnosci_f1.png", dpi=300)
+        plt.savefig(f"{OUTPUT_DIR}/ml/heatmapa_stabilnosci_f1.png", dpi=300)
         plt.close()
 
 
-# ── POPRAWIONA FUNKCJA WEJŚCIOWA ──────────────────────────────────────────────
+# ── FUNKCJA WEJŚCIOWA ─────────────────────────────────────────────────────────
 
 def uruchom_benchmark(diagnozy: pd.DataFrame,
                       df_poziomy: Optional[pd.DataFrame] = None,
                       prob_threshold: float = 0.50,
                       col_poziom: str = 'Poziom_wody_max',
-                      tolerancja_dni: int = 2,
-                      model_name: str = "rf") -> Dict:  # <--- TUTAJ: dodany brakujący parametr przekazywany z maina
+                      tolerancja_dni: int = 2) -> Dict:
     """
     Parametry
     ----------
-    diagnozy       : DataFrame zwrócony przez ml_factor_system.uruchom_system() lub lstm_system
+    diagnozy       : DataFrame zwrócony przez ml_factor_system.uruchom_system()
     df_poziomy     : opcjonalny DataFrame z kolumnami poziomów wody (index=Data)
     prob_threshold : próg klasyfikacji (domyślnie 0.50)
     col_poziom     : nazwa kolumny poziomu wody w df_poziomy
     tolerancja_dni : tolerancja przy dopasowywaniu epizodów (domyślnie 2 dni)
-    model_name     : identyfikator modelu ("rf" lub "lstm") do segregacji wyników
     """
     val = BenchmarkValidator(
         diagnozy=diagnozy,
         df_poziomy=df_poziomy,
         prob_threshold=prob_threshold,
         tolerancja_dni=tolerancja_dni,
-        model_name=model_name  # <--- TUTAJ: prawidłowe przekisowanie wartości do klasy dataclass
     )
     return val.pelny_raport(col_poziom=col_poziom)
 
-
-# ── SPRAWDZONY BLOK URUCHOMIENIA DLA OBU MODELI ───────────────────────────────
-
 if __name__ == "__main__":
-    # Wspólny zbiór poziomów wody (final.csv)
-    df_final = pd.read_csv(
-        os.path.join(_ROOT, "data", "processed", "final.csv"),
-        parse_dates=["Data"], index_col="Data"
+    diagnozy = pd.read_csv(
+        os.path.join(_ROOT, "reports", "ml", "diagnozy_dzienne_rf.csv"),
+        parse_dates=["Data"],
+        index_col="Data"
     )
-
-    # 1. URUCHOMIENIE WALIDACJI DLA RANDOM FOREST
-    rf_path = os.path.join(_ROOT, "reports", "ml", "diagnozy_dzienne_rf.csv")
-    if os.path.exists(rf_path):
-        diagnozy_rf = pd.read_csv(rf_path, parse_dates=["Data"], index_col="Data")
-        uruchom_benchmark(diagnozy_rf, df_poziomy=df_final, model_name="rf")
-    else:
-        print(f"[INFO] Brak pliku {rf_path} - pomijam walidację RF.")
-
-    # 2. URUCHOMIENIE WALIDACJI DLA LSTM
-    lstm_path = os.path.join(_ROOT, "reports", "ml", "diagnozy_dzienne_lstm.csv")
-    if os.path.exists(lstm_path):
-        diagnozy_lstm = pd.read_csv(lstm_path, parse_dates=["Data"], index_col="Data")
-        uruchom_benchmark(diagnozy_lstm, df_poziomy=df_final, model_name="lstm")
-    else:
-        print(f"[INFO] Brak pliku {lstm_path} - pomijam walidację LSTM.")
+    final = pd.read_csv(
+        os.path.join(_ROOT, "data", "processed", "final.csv"),
+        parse_dates=["Data"],
+        index_col="Data"
+    )
+    uruchom_benchmark(diagnozy, df_poziomy=final)

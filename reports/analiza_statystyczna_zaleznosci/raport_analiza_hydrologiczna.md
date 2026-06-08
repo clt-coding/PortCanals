@@ -21,7 +21,7 @@ Analizę przeprowadzono w następujących etapach dla trzech stacji pomiarowych 
 
 ### 2.1 Korelacja krzyżowa z opóźnieniem (lag 0–14 dni)
 
-![Korelacja z opóźnieniem](korelacja_opoznienia.png)
+![Korelacja z opóźnieniem](plots/korelacja_opoznienia.png)
 
 Analiza korelacji z opóźnieniem ujawnia wyraźne różnice między stacjami:
 
@@ -39,7 +39,7 @@ Port Północny wykazuje zupełnie inny charakter — korelacja z opadem jest ni
 
 ### 2.2 Macierz korelacji
 
-![Macierz korelacji](macierz_korelacji.png)
+![Macierz korelacji](plots/macierz_korelacji.png)
 
 Kluczowe obserwacje:
 
@@ -57,7 +57,7 @@ Kluczowe obserwacje:
 
 ### 2.3 Zależność między stacjami śródlądowymi a Portem Północnym
 
-![Scatter stacje vs Port Północny](scatter_stacje_port.png)
+![Scatter stacje vs Port Północny](plots/scatter_stacje_port.png)
 
 Wykresy rozrzutu ujawniają strukturę zależności między stacjami śródlądowymi (Strzyża, Martwa Wisła) a Portem Północnym, której samo r = 0,42–0,44 nie oddaje w pełni.
 
@@ -123,7 +123,7 @@ Dla Strzyży i Martwej Wisły widoczny jest rozproszony, ale kierunkowy trend wz
 
 #### KDE — porównanie stacji
 
-![KDE porównanie stacji](kde_porownanie_stacje.png)
+![KDE porównanie stacji](plots/kde_porownanie_stacje.png)
 
 Strzyża i Martwa Wisła wykazują podobny wzorzec: rozkład dla dużego opadu jest przesunięty w prawo względem małego opadu, z wyraźniejszą asymetrią prawostronną sygnalizującą zdarzenia wezbraniowe. Różnica median wynosi odpowiednio +0,135 m (Strzyża: 0,122 → 0,257 m) i +0,126 m (Martwa Wisła: –0,070 → 0,056 m).
 
@@ -131,7 +131,7 @@ Port Północny prezentuje zupełnie inny obraz — rozkłady dla małego i duż
 
 #### Boxplot
 
-![Boxplot wszystkie stacje](boxplot_opad_woda_wszystkie.png)
+![Boxplot wszystkie stacje](plots/boxplot_opad_woda_wszystkie.png)
 
 Boxplot potwierdza obserwacje z KDE. Dla Strzyży i Martwej Wisły pudełka dla dużego opadu są wyraźnie przesunięte w górę względem małego opadu, a rozstęp IQR jest większy — wyższe opady wiążą się z większą zmiennością poziomów wody. Dla Portu Północnego pudełka obu grup zachodzą na siebie w niemal identyczny sposób, co wizualnie potwierdza brak wpływu opadu na tę stację.
 
@@ -179,25 +179,25 @@ Wobec minimalnej korelacji z opadem (r < 0,06), przeprowadzono osobną analizę 
 | `Wiatr_sin_proxy`    | –0,040    | –0,099     |
 | `Wiatr_cos_proxy`    | +0,040    | +0,100     |
 
-![Macierz korelacji Port Północny](macierz_port_wiatr_cisnienie.png)
+![Macierz korelacji Port Północny](plots/macierz_port_wiatr_cisnienie.png)
 
 Wszystkie korelacje są słabe (r < 0,20), jednak konsekwentnie wyższe dla Spearmana niż Pearsona, co potwierdza nieliniowy charakter zależności. Najsilniejszym predyktorem jest **trend ciśnienia 7-dniowy** (ρ = –0,297) — długotrwale spadające ciśnienie jest lepszym sygnałem spiętrzenia niż chwilowa wartość absolutna. `Ciśnienie_ampl` koreluje dodatnio (ρ = +0,222), co wskazuje że dni z dużą dobową zmiennością ciśnienia wiążą się z wyższym poziomem wody.
 
 #### Scatter: siła wiatru i delta ciśnienia vs. poziom wody
 
-![Scatter wiatr i ciśnienie](scatter_port_wiatr_cisnienie.png)
+![Scatter wiatr i ciśnienie](plots/scatter_port_wiatr_cisnienie.png)
 
 Oba scatter ploty pokazują ten sam charakterystyczny wzorzec: gęsta chmura punktów przy normalnym poziomie wody (5,0–5,5 m) oraz pionowo opadające punkty odstające przy niskich wartościach siły wiatru i ujemnej delcie ciśnienia. Cofki pojawiają się przy **słabym wietrze i spadającym ciśnieniu** — co sugeruje specyficzny układ synoptyczny (np. przejście frontu z silnym wiatrem lądowym), a nie po prostu "brak wiatru".
 
 #### Poziom wody według sektora wiatru
 
-![Boxplot sektor wiatru](boxplot_port_sektor_wiatru.png)
+![Boxplot sektor wiatru](plots/boxplot_port_sektor_wiatru.png)
 
 `Wiatr_sektor_proxy` w danych zawiera kategorie ciśnieniowe (`spadek_cisnienia`, `stabilnie`, `wzrost_cisnienia`), nie geograficzne kierunki wiatru. Boxplot pokazuje że cofki (wartości odstające w dół) pojawiają się zarówno przy spadku jak i wzroście ciśnienia, choć przy spadku ciśnienia są liczniejsze. Brak geograficznego kierunku wiatru stanowi istotne ograniczenie analizy — rzeczywisty kierunek wiatru (wschodni/lądowy vs. zachodni/morski) jest kluczową zmienną dla mechanizmu cofki.
 
 #### Trzy reżimy Portu Północnego
 
-![Reżimy atmosferyczne](boxplot_port_rezim_atmosfera.png)
+![Reżimy atmosferyczne](plots/boxplot_port_rezim_atmosfera.png)
 
 Podział na trzy reżimy (cofka P10 / normalny / spiętrzenie P90) ujawnił wyraźne różnice warunków atmosferycznych:
 

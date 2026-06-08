@@ -68,7 +68,7 @@ STACJE = {
 EPIZOD_PERCENTYL = 0.90
 
 # ZMIANA: AND (>=2 stacje) zamiast OR — eliminuje szum od pojedynczych stacji.
-# Analiza wykazała, że 28% dni OR to sygnały tylko z 1 stacji; model nie był w stanie
+# Analiza wykazała, że 28% dni OR to sygnały tylko z 1 stacji; models nie był w stanie
 # odróżnić takich przypadków od pogody, stąd niski recall w 2022 i 2025.
 EPIZOD_MIN_STACJI = 2
 
@@ -271,7 +271,7 @@ def diagnozuj(obserwacja: pd.Series,
     }
 
     komunikat = (
-        f"{opis_czynnika} – model ocenia ryzyko wezbrania na {proba:.0%}. "
+        f"{opis_czynnika} – models ocenia ryzyko wezbrania na {proba:.0%}. "
         f"Kierunek wpływu: {kierunek}. "
         f"Pewność (prawdopodobieństwo z RF): {proba:.0%}."
     )
@@ -291,7 +291,7 @@ def diagnozuj(obserwacja: pd.Series,
 # ── 6. WYKRESY ────────────────────────────────────────────────────────────────
 
 def _wykres_feature_importance(fi: pd.DataFrame):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
     plt.figure(figsize=(10, 6))
     sns.barplot(data=fi.head(15), x='waznosc_pct', y='czynnik', palette='viridis')
     plt.title('Ważność cech – Random Forest (top 15)', fontsize=14)
@@ -303,7 +303,7 @@ def _wykres_feature_importance(fi: pd.DataFrame):
 
 
 def _wykres_walidacja(wyniki_walidacji: pd.DataFrame):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
     for ax, metryki, tytul in zip(
@@ -332,7 +332,7 @@ def _wykres_walidacja(wyniki_walidacji: pd.DataFrame):
 
 
 def _wykres_confusion(y_true, y_pred):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
@@ -347,7 +347,7 @@ def _wykres_confusion(y_true, y_pred):
 
 
 def _wykres_epizody_per_stacja(df: pd.DataFrame):
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
     roczne = {}
     for nazwa in STACJE:
         col = f'Epizod_{nazwa}'
@@ -395,7 +395,7 @@ def uruchom_system(final: pd.DataFrame) -> pd.DataFrame:
 
     # Walidacja czasowa z rolling threshold
     wyniki_walidacji = walidacja_czasowa(final)
-    os.makedirs('reports/ml', exist_ok=True)
+    os.makedirs('../src/data/reports/ml', exist_ok=True)
     wyniki_walidacji.to_csv('reports/ml/walidacja_czasowa.csv', index=False)
     print("\nPodsumowanie walidacji:")
     print(wyniki_walidacji[['Rok','Recall_RF','Precision_RF','F1_RF',
@@ -484,7 +484,7 @@ if __name__ == "__main__":
     # Alarm to przypadek, gdy prawdopodobieństwo >= PROB_THRESHOLD
         alarmy = diagnozy[diagnozy['prawdopodobienstwo'] >= PROB_THRESHOLD]
     
-    # Fałszywe alarmy: model daje alarm, a epizod_rzeczywisty == 0
+    # Fałszywe alarmy: models daje alarm, a epizod_rzeczywisty == 0
         false_positives = alarmy[alarmy['epizod_rzeczywisty'] == 0]
     
         print(f"\n--- ANALIZA FAŁSZYWYCH ALARMÓW ---")
@@ -495,7 +495,7 @@ if __name__ == "__main__":
             print(false_positives[['prawdopodobienstwo', 'glowny_czynnik', 'komunikat']].head())
         
         # Sprawdźmy, czy te fałszywe alarmy to może "prawie-epizody"
-        # Jeśli główny czynnik to często 'Opad_72h', to znaczy, że model reaguje na opad,
+        # Jeśli główny czynnik to często 'Opad_72h', to znaczy, że models reaguje na opad,
         # który NIE spowodował przekroczenia progu (ale był wysoki).
             print("\nNajczęstsze czynniki przy fałszywych alarmach:")
             print(false_positives['glowny_czynnik'].value_counts())

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 final = pd.read_csv(
-    'data/processed/final.csv',
+    '../data/processed/final.csv',
     parse_dates=['Data'],
     index_col='Data'
 )
@@ -19,7 +19,7 @@ final = pd.read_csv(
 # Stacje: Strzyża, Martwa Wisła, Port Północny
 # =============================================================================
  
-os.makedirs('reports/analiza_statystyczna_zaleznosci', exist_ok=True)
+os.makedirs('../reports/analiza_statystyczna_zaleznosci', exist_ok=True)
  
 # Słownik stacji: nazwa wyświetlana → kolumna w final
 STACJE = {

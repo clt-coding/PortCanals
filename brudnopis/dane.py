@@ -6,11 +6,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import confusion_matrix, precision_score, recall_score
 
 #METEOROLOGICZNE
-meteo_files = [f for f in os.listdir('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025') if f.endswith('.xlsx')]
+meteo_files = [f for f in os.listdir('../data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025') if f.endswith('.xlsx')]
 all_meteo = []
 
 for file in meteo_files:
-    path = os.path.join('data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025', file)
+    path = os.path.join('../data/raw/dane-pogodowe-stacja-gora-gradowa-2021-2025', file)
     df = pd.read_excel(path, skipfooter=4)
     df = df.dropna(how='all')
     df.columns = df.columns.str.strip()
@@ -135,11 +135,11 @@ full_meteo.loc[full_meteo.index[2], ['Ciśnienie_delta_3d']] = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #POZIOM WODY
-water_level_files = [f for f in os.listdir('data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025') if f.endswith('.xlsx')]
+water_level_files = [f for f in os.listdir('../data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025') if f.endswith('.xlsx')]
 all_water_level = []
 
 for file in water_level_files:
-    path = os.path.join('data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025', file)
+    path = os.path.join('../data/raw/poziom-wody-ujscie-rzeki-strzyza-2021-2025', file)
     df = pd.read_excel(path, skipfooter=4, usecols=[0, 1])
     df = df.dropna(how='all')
     df.columns = df.columns.str.strip()
