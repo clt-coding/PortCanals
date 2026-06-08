@@ -40,3 +40,38 @@ PROB_THRESHOLD: 0.5
 Finalne Precision: 0.581
 Finalne Recall: 0.894
 ------------------------------
+
+--- EKSPERYMENT: 2026-06-09 00:53:44 ---
+PROB_THRESHOLD: 0.5
+Średnie F1 (walidacja): 0.490
+Finalne Precision: 0.581
+Finalne Recall: 0.894
+------------------------------
+
+--- EKSPERYMENT: 2026-06-09 00:55:17 ---
+PROB_THRESHOLD: 0.5
+Średnie F1 (walidacja): 0.490
+Finalne Precision: 0.581
+Finalne Recall: 0.894
+------------------------------
+
+--- EKSPERYMENT: 2026-06-09 01:00:46 ---
+PROB_THRESHOLD: 0.5
+Średnie F1 (walidacja): 0.490
+Finalne Precision: 0.581
+Finalne Recall: 0.894
+------------------------------
+
+--- EKSPERYMENT: 2026-06-09 01:04:15 ---
+PROB_THRESHOLD: 0.5
+Średnie F1 (walidacja): 0.490
+Finalne Precision: 0.581
+Finalne Recall: 0.894
+------------------------------
+
+--- EKSPERYMENT: 2026-06-09 01:14:49 ---
+PROB_THRESHOLD: 0.5
+Średnie F1 (walidacja): 0.490
+Finalne Precision: 0.581
+Finalne Recall: 0.894
+------------------------------
