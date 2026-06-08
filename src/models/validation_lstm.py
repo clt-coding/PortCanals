@@ -19,6 +19,11 @@ from sklearn.metrics import (
     mean_absolute_error, mean_squared_error,
 )
 
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.abspath(os.path.join(_CURRENT_DIR, "..", ".."))
+
+print(f"[DEBUG] Poprawnie wyznaczony folder projektu: {_ROOT}")
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # ── KONFIGURACJA ──────────────────────────────────────────────────────────────
@@ -572,7 +577,7 @@ if __name__ == "__main__":
     )
 
     # 1. URUCHOMIENIE WALIDACJI DLA RANDOM FOREST
-    rf_path = os.path.join(_ROOT, "reports", "ml", "diagnozy_dzienne_rf.csv")
+    rf_path = os.path.join(_ROOT, "reports", "ml", "rf", "diagnozy_dzienne_rf.csv")
     if os.path.exists(rf_path):
         diagnozy_rf = pd.read_csv(rf_path, parse_dates=["Data"], index_col="Data")
         uruchom_benchmark(diagnozy_rf, df_poziomy=df_final, model_name="rf")
@@ -580,7 +585,7 @@ if __name__ == "__main__":
         print(f"[INFO] Brak pliku {rf_path} - pomijam walidację RF.")
 
     # 2. URUCHOMIENIE WALIDACJI DLA LSTM
-    lstm_path = os.path.join(_ROOT, "reports", "ml", "diagnozy_dzienne_lstm.csv")
+    lstm_path = os.path.join(_ROOT, "reports", "ml", "lstm", "diagnozy_dzienne_lstm.csv")
     if os.path.exists(lstm_path):
         diagnozy_lstm = pd.read_csv(lstm_path, parse_dates=["Data"], index_col="Data")
         uruchom_benchmark(diagnozy_lstm, df_poziomy=df_final, model_name="lstm")

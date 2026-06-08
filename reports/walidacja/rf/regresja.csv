@@ -1,2 +1,2 @@
 col_poziom,n_dni_epizodow,n_dni_poza,MAE_w_epizodzie,RMSE_w_epizodzie,MAE_poza_epizodem,RMSE_poza_epizodem,uwaga
-Poziom_wody_max,180,1646,0.3046,0.3572,0.2937,0.3387,Metryki oparte na skalowanym P(epizod) dla modelu RF.
+Poziom_wody_max,180,1646,0.3532,0.405,0.2742,0.3245,Metryki oparte na skalowanym P(epizod) dla modelu RF.
