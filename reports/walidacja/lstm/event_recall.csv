@@ -1,2 +1,2 @@
 n_epizodow_true,n_epizodow_pred,n_wykrytych,event_recall,n_nieykrytych
-60,76,52,0.867,8
+60,57,49,0.817,11
