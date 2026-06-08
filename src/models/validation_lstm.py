@@ -158,7 +158,7 @@ class BenchmarkValidator:
 
         df_oo = pd.DataFrame(rekordy)
         self._wyniki['onset_offset'] = df_oo
-        return df_oo
+        return df_oo  
 
     # ── 2. EVENT-LEVEL RECALL (pokrycie) ──────────────────────────────────────
 
@@ -385,20 +385,34 @@ class BenchmarkValidator:
 
         er = self.event_recall()
         print(f"\n=== Pokrycie zdarzen (event-level recall) ===")
+        print(f"  Epizodow rzeczywistych : {er['n_epizodow_true']}")
+        print(f"  Epizodow predykowanych : {er['n_epizodow_pred']}")
+        print(f"  Wykrytych              : {er['n_wykrytych']}")
+        print(f"  Nieykrytych            : {er['n_nieykrytych']}")
         print(f"  Event recall           : {er['event_recall']:.3f}")
 
         fa = self.false_alarm_metrics()
         print(f"\n=== Falszywe alarmy (false alarm rate) ===")
         print(f"  Day-level precision    : {fa['precision_day']:.3f}")
+        print(f"  Day-level FAR          : {fa['far_day']:.3f}   (= 1 - precision)")
+        print(f"  Pred. epizodow lacznie : {fa['n_pred_epizodow']}")
+        print(f"  Falszywe alarmy (ev.)  : {fa['n_fa_epizodow']}  ({100*fa['far_event']:.1f}% pred. epizodow)")
         print(f"  Event FAR              : {fa['far_event']:.3f}")
 
         df_peak = self.peak_error(col_poziom)
         print(f"\n=== Blad piku (peak timing / peak magnitude) ===")
         if len(df_peak) > 0:
             pt = df_peak['peak_timing_error_dni'].dropna()
-            print(f"  Peak timing error sr.  : {pt.mean():+.2f} dni")
+            print(f"  Epizodow z dopasowaniem: {len(df_peak)}")
+            print(f"  Peak timing error sr.  : {pt.mean():+.2f} dni"
+                  f"  (std={pt.std():.2f}, mediana={pt.median():+.1f})")
             pm = df_peak['peak_magnitude_error'].dropna()
-            print(f"  Peak magnitude error sr.: {pm.mean():+.4f}" if len(pm) > 0 else "  Peak magnitude error   : N/A")
+            if len(pm) > 0:
+                print(f"  Peak magnitude error sr.: {pm.mean():+.4f}  (std={pm.std():.4f})")
+            else:
+                print(f"  Peak magnitude error   : N/A (brak df_poziomy)")
+        else:
+            print(f"  Brak dopasowanych epizodow.")
 
         reg = self.metryki_regresji(col_poziom)
         print(f"\n=== Zgodnosc wartosci poziomu wody (MAE / RMSE) ===")

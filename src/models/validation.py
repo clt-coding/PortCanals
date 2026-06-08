@@ -185,7 +185,6 @@ class BenchmarkValidator:
     def event_recall(self, tolerancja_dni: Optional[int] = None) -> Dict:
         """
         Event-level: ile % rzeczywistych epizodów zostało wykrytych
-        (co najmniej częściowe nakładanie z predykcją, z tolerancją).
         """
         tol = tolerancja_dni if tolerancja_dni is not None else self.tolerancja_dni
         d = self._d
@@ -208,10 +207,6 @@ class BenchmarkValidator:
     # ── 3. FALSE ALARM RATE ───────────────────────────────────────────────────
 
     def false_alarm_metrics(self) -> Dict:
-        """
-        Day-level: precision, FAR (false alarm rate), liczba FA epizodów.
-        Event-level false alarms: predykowane epizody bez nakładania z prawdziwymi.
-        """
         d = self._d
         ep_true = _znajdz_epizody_ciagłe(d['y_true'])
         ep_pred = _znajdz_epizody_ciagłe(d['y_pred'])
@@ -242,8 +237,7 @@ class BenchmarkValidator:
         """
         Dla każdego wykrytego epizodu oblicza:
           - peak_timing_error_dni : różnica dnia maksimum (pred vs true)
-          - peak_magnitude_error  : różnica wartości maksimum (pred vs true), jeśli df_poziomy dostępne
-        Wymaga df_poziomy z kolumną col_poziom.
+          - peak_magnitude_error  : różnica wartości maksimum (pred vs true)
         """
         d = self._d
         ep_true = _znajdz_epizody_ciagłe(d['y_true'])
@@ -310,8 +304,6 @@ class BenchmarkValidator:
         Oblicza MAE i RMSE dla kolumny poziomu wody, osobno:
           - w dniach epizodowych (y_true==1)
           - poza epizodami (y_true==0)
-        Wykorzystuje 'prawdopodobienstwo' jako prognozę regresyjną LUB porównuje bezpośrednio
-        z df_poziomy jeśli dostępne.
         """
         if self.df_poziomy is None or col_poziom not in self.df_poziomy.columns:
             return {'uwaga': f'df_poziomy lub kolumna {col_poziom} niedostępna'}

@@ -46,7 +46,6 @@ Model wykrył **85% wszystkich rzeczywistych wezbrań**, co świadczy o wysokiej
 Metryka ta pozwala ocenić liczbę błędnych alarmów generowanych przez model.
 
 ### Poziom dzienny
-Jeśli model przewidział alarm na 8 dni (czyli włączył go 3 dni za wcześnie), to te 3 dni są traktowane jako 3 osobne fałszywe alarmy.
 
 | Metryka          | Wartość |
 | ---------------- | ------- |
@@ -73,7 +72,9 @@ Analiza dokładności wskazania momentu oraz wysokości maksymalnego poziomu wod
 | -------------------------------- | ---------- |
 | Liczba dopasowanych epizodów     | 33         |
 | Średni błąd czasu piku           | -0,39 dnia |
+| Odchylenie standardowe           | 3,46 dnia  |
 | Średni błąd wysokości piku       | +0,0418    |
+| Odchylenie standardowe wysokości | 0,1326     |
 
 Interpretacja:
 * maksimum wezbrania jest wskazywane średnio niecałe pół dnia wcześniej niż w rzeczywistości,
