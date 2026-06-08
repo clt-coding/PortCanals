@@ -1,8 +1,0 @@
-
---- EKSPERYMENT LSTM: 2026-06-07 20:09:11 ---
-PROB_THRESHOLD: 0.5
-PARAMETRY: {'units_1': 64, 'units_2': 32, 'dropout': 0.5, 'learning_rate': 0.001, 'batch_size': 32, 'epochs': 100, 'patience': 10}
-Średnie F1 (walidacja): 0.504
-Finalne Precision: 0.411
-Finalne Recall: 0.883
-----------------------------------------
