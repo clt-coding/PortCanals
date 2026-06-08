@@ -1,2 +1,2 @@
 col_poziom,n_dni_epizodow,n_dni_poza,MAE_w_epizodzie,RMSE_w_epizodzie,MAE_poza_epizodem,RMSE_poza_epizodem,uwaga
-Poziom_wody_max,180,1640,0.4843,0.5254,0.3643,0.4159,Metryki oparte na skalowanym P(epizod) dla modelu LSTM.
+Poziom_wody_max,180,1640,0.421,0.4634,0.3349,0.389,Metryki oparte na skalowanym P(epizod) dla modelu LSTM.
