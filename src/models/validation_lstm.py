@@ -90,7 +90,7 @@ class BenchmarkValidator:
     _wyniki: Dict = field(default_factory=dict, init=False, repr=False)
 
     def __post_init__(self):
-        # Dynamiczne tworzenie folderu dedykowanego pod konkretny model
+        # Dynamiczne tworzenie folderu dedykowanego pod konkretny models
         self.target_dir = os.path.join(OUTPUT_DIR, self.model_name)
         os.makedirs(self.target_dir, exist_ok=True)
         self._przygotuj_kolumny()
@@ -420,7 +420,7 @@ class BenchmarkValidator:
         for _, r in df_rok.iterrows():
             print(f"  {str(r['klucz']):<8} {r['recall']:>7.3f} {r['precision']:>7.3f} {r['f1']:>7.3f} {r['event_recall']:>9.3f}")
 
-        # Zapis do podfolderu dedykowanego pod wybrany model
+        # Zapis do podfolderu dedykowanego pod wybrany models
         df_oo.to_csv(f"{self.target_dir}/onset_offset.csv", index=False)
         df_peak.to_csv(f"{self.target_dir}/peak_error.csv", index=False)
         df_stab.to_csv(f"{self.target_dir}/stabilnosc_sezonowa.csv", index=False)
@@ -495,7 +495,7 @@ class BenchmarkValidator:
         ax.axvline(0, color='black', linewidth=1.2, linestyle='--')
         ax.axvline(values.mean(), color=KOLORY["episode"], linewidth=1.5, label=f'Średnia: {values.mean():+.1f} dni')
         ax.set_title(f'Błąd czasu piku ({self.model_name.upper()})', fontsize=11)
-        ax.set_xlabel('Błąd [dni]  (+ = model pokazuje pik za późno)')
+        ax.set_xlabel('Błąd [dni]  (+ = models pokazuje pik za późno)')
         ax.set_ylabel('Liczba epizodów')
         ax.legend()
         plt.tight_layout()

@@ -1,5 +1,5 @@
 import pandas as pd
-from ml_factor_system import uruchom_system as uruchom_rf
+from ../random_forest/random_forest_system/ import uruchom_system as uruchom_rf
 from lstm_system import uruchom_system_lstm as uruchom_lstm
 
 def main():
@@ -27,7 +27,7 @@ def main():
     })
 
     # Dodajemy kolumnę 'Decyzja_Ekspercka'
-    # Prosta logika: jeśli chociaż jeden model widzi wysokie ryzyko, dajemy ostrzeżenie
+    # Prosta logika: jeśli chociaż jeden models widzi wysokie ryzyko, dajemy ostrzeżenie
     raport['Alert_Systemowy'] = raport.apply(lambda row: 'TAK' if 'wysokie' in [row['Ryzyko_RF'], row['Ryzyko_LSTM']] else 'NIE', axis=1)
 
     # Zapis

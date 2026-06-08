@@ -3,7 +3,7 @@ Moduł 7: Walidacja i benchmark – pełne metryki jakości modelu RF
 dla wykrywania epizodów wysokiej wody.
 
 Metryki zaimplementowane:
-  1. Błąd onset/offset epizodu        – o ile dni model myli start/koniec wezbrania
+  1. Błąd onset/offset epizodu        – o ile dni models myli start/koniec wezbrania
   2. Event-level recall (pokrycie)     – % rzeczywistych epizodów wykrytych
   3. False alarm rate / precision      – % fałszywych alarmów
   4. Błąd piku (peak timing + magnitude) – błąd dnia i wartości maksimum
@@ -39,7 +39,7 @@ SEZONY_DEF = {
 }
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+_ROOT = os.path.abspath(os.path.join(_HERE, "..", "..",".."))
 OUTPUT_DIR = os.path.join(_ROOT, "reports", "walidacja")
 
 KOLORY = {
@@ -134,7 +134,7 @@ class BenchmarkValidator:
         """
         Dla każdego rzeczywistego epizodu szuka najbliższego predykowanego,
         oblicza błąd startu (onset_error_dni) i końca (offset_error_dni).
-        Wartości dodatnie = model spóźniony; ujemne = model za wczesny.
+        Wartości dodatnie = models spóźniony; ujemne = models za wczesny.
         """
         d = self._d
         ep_true = _znajdz_epizody_ciagłe(d['y_true'])
@@ -445,7 +445,7 @@ class BenchmarkValidator:
             print(f"  Offset error sr.       : {oo_w['offset_error_dni'].mean():+.2f} dni"
                   f"  (std={oo_w['offset_error_dni'].std():.2f},"
                   f"  mediana={oo_w['offset_error_dni'].median():+.1f})")
-            print(f"  (+ = model spozniony, - = za wczesny)")
+            print(f"  (+ = models spozniony, - = za wczesny)")
 
         # 2. Event recall
         er = self.event_recall()
@@ -625,7 +625,7 @@ class BenchmarkValidator:
         ax.axvline(values.mean(), color=KOLORY["episode"], linewidth=1.5,
                    label=f'Średnia: {values.mean():+.1f} dni')
         ax.set_title('Błąd czasu piku (peak timing error)', fontsize=11)
-        ax.set_xlabel('Błąd [dni]  (+ = model pokazuje pik za późno)')
+        ax.set_xlabel('Błąd [dni]  (+ = models pokazuje pik za późno)')
         ax.set_ylabel('Liczba epizodów')
         ax.legend()
         plt.tight_layout()
