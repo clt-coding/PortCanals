@@ -359,6 +359,8 @@ def _wykres_porownanie_rf_lstm(wyniki_rf_path: str, wyniki_lstm: pd.DataFrame):
         ax.legend()
         ax.set_ylim(0, 1)
         ax.axhline(0.5, color='gray', linestyle=':', alpha=0.5)
+        ax.set_xticks(merged['Rok'])
+        ax.set_xticklabels(merged['Rok'].astype(int))
 
     plt.suptitle('Porównanie: LSTM vs Random Forest (walk-forward, ten sam target)', fontsize=12)
     plt.tight_layout()
