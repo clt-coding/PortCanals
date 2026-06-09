@@ -13,20 +13,20 @@ Metryka określa, o ile dni model przesuwa początek lub koniec wykrytego wezbra
 | Metryka                       | Wartość    |
 | ----------------------------- | ---------- |
 | Liczba epizodów rzeczywistych | 60         |
-| Wykryte epizody               | 37 (61,7%) |
-| Niewykryte epizody            | 23 (38,3%) |
-| Średni błąd początku (onset)  | -3,95 dni  |
-| Odchylenie standardowe onset  | 6,53 dni   |
-| Mediana onset                 | -1 dzień   |
-| Średni błąd końca (offset)    | +2,14 dni  |
-| Odchylenie standardowe offset | 4,97 dni   |
+| Wykryte epizody               | 33 (55,0%) |
+| Niewykryte epizody            | 27 (45,0%) |
+| Średni błąd początku (onset)  | -2,00 dni  |
+| Odchylenie standardowe onset  | 3,66 dni   |
+| Mediana onset                 | 0 dni      |
+| Średni błąd końca (offset)    | +0,91 dni  |
+| Odchylenie standardowe offset | 2,40 dni   |
 | Mediana offset                | 0 dni      |
 
 Wnioski:
-* ujemny błąd onset oznacza, że model przeciętnie sygnalizuje początek wezbrania około **4 dni wcześniej** niż występuje ono w rzeczywistości,
-* dodatni błąd offset wskazuje, że model utrzymuje alarm średnio o **2 dni dłużej** niż rzeczywisty epizod,
-* mediana onset równa -1 dzień sugeruje lekką tendencję do wcześniejszego wykrywania zdarzeń,
-* większe odchylenia standardowe wskazują na znaczną zmienność dokładności wyznaczania granic epizodów.
+* ujemny błąd onset oznacza, że model przeciętnie sygnalizuje początek wezbrania około **2 dni wcześniej**  niż występuje ono w rzeczywistości,
+* dodatni błąd offset wskazuje, że model utrzymuje alarm średnio o **0,9 dni dłużej** niż rzeczywisty epizod,
+* mediana onset równa 0 dni dla obu metryk oznacza, że dla znacznej części epizodów granice zdarzeń zostały określone poprawnie,
+* stosunkowo niewielkie odchylenia standardowe świadczą o stabilnym wyznaczaniu początku i końca wezbrań.
 
 ## 7.2. Pokrycie zdarzeń (Event Coverage / Recall)
 Metryka określa, jaki odsetek rzeczywistych epizodów wysokiej wody został wykryty przez model.
@@ -34,12 +34,12 @@ Metryka określa, jaki odsetek rzeczywistych epizodów wysokiej wody został wyk
 | Metryka                     | Wartość |
 | --------------------------- | ------- |
 | Rzeczywiste epizody         | 60      |
-| Epizody wykryte przez model | 53      |
-| Epizody niewykryte          | 7       |
-| Event Recall                | 0,883   |
+| Epizody wykryte przez model | 51      |
+| Epizody niewykryte          | 9       |
+| Event Recall                | 0,850   |
 
 Wnioski:
-Model wykrył **88,3% wszystkich rzeczywistych wezbrań**, co świadczy o wysokiej skuteczności identyfikacji zdarzeń. Jedynie 12% epizodów nie zostało rozpoznanych.
+Model wykrył **85,0% wszystkich rzeczywistych wezbrań**, co świadczy o wysokiej skuteczności identyfikacji zdarzeń. Jedynie 15% epizodów nie zostało rozpoznanych.
 
 ---
 
@@ -50,35 +50,35 @@ Metryka ta pozwala ocenić liczbę błędnych alarmów generowanych przez model.
 
 | Metryka          | Wartość |
 | ---------------- | ------- |
-| Precision        | 0,475   |
-| False Alarm Rate | 0,525   |
+| Precision        | 0,581   |
+| False Alarm Rate | 0,419   |
 
-Oznacza to, że około **47,5% dni oznaczonych jako epizodowe było poprawnych**, natomiast około **52,5% stanowiły fałszywe wskazania**.
+Oznacza to, że około **58,1% dni oznaczonych jako epizodowe było poprawnych**, natomiast około **41,9% stanowiły fałszywe wskazania**.
 
 ### Poziom zdarzeń
 
 | Metryka                        | Wartość |
 | ------------------------------ | ------- |
-| Liczba przewidzianych epizodów | 87      |
-| Fałszywe epizody               | 45      |
-| Event FAR                      | 0,517   |
+| Liczba przewidzianych epizodów | 72      |
+| Fałszywe epizody               | 27      |
+| Event FAR                      | 0,375   |
 
 Interpretacja:
-Spośród wszystkich wykrytych epizodów około **51,7% nie znalazło potwierdzenia w danych rzeczywistych**. Model jest więc stosunkowo czuły i skutecznie wykrywa większość zdarzeń, ale generuje zauważalną liczbę nadmiarowych alarmów.
+Spośród wszystkich wykrytych epizodów około **37,5% nie znalazło potwierdzenia w danych rzeczywistych**. Model jest więc stosunkowo czuły, ale generuje zauważalną liczbę nadmiarowych alarmów.
 
 ## 7.4. Błąd piku wezbrania
 Analiza dokładności wskazania momentu oraz wysokości maksymalnego poziomu wody.
 
 | Metryka                          | Wartość    |
 | -------------------------------- | ---------- |
-| Liczba dopasowanych epizodów     | 37         |
-| Średni błąd czasu piku           | +0,03 dnia |
-| Odchylenie standardowe           | 4,99 dnia  |
-| Średni błąd wysokości piku       | +0,0727    |
-| Odchylenie standardowe wysokości | 0,1707     |
+| Liczba dopasowanych epizodów     | 33         |
+| Średni błąd czasu piku           | -0,39 dnia |
+| Odchylenie standardowe           | 3,46 dnia  |
+| Średni błąd wysokości piku       | +0,0418    |
+| Odchylenie standardowe wysokości | 0,1326     |
 
 Interpretacja:
-* maksimum wezbrania jest wskazywane niemalże tego samego dnia, co świadczy o dobrej lokalizacji momentu wezbrania
+* maksimum wezbrania jest wskazywane średnio niecałe pół dnia wcześniej niż w rzeczywistości,
 * błąd wysokości piku jest niewielki, co oznacza dobrą zgodność modelu z rzeczywistą amplitudą wezbrania.
 
 ## 7.5. Zgodność wartości poziomu wody (MAE / RMSE)
@@ -88,18 +88,17 @@ Ocena dokładności odwzorowania poziomu wody dla części regresyjnej modelu.
 
 | Metryka | Wartość |
 | ------- | ------- |
-| MAE     | 0,3532  |
-| RMSE    | 0,4050  |
+| MAE     | 0,3046  |
+| RMSE    | 0,3573  |
 
 ### Dni poza epizodami
 
 | Metryka | Wartość |
 | ------- | ------- |
-| MAE     | 0,2742  |
-| RMSE    | 0,3245  |
+| MAE     | 0,2938  |
+| RMSE    | 0,3388  |
 
 Wnioski:
-* błędy regresyjne są większe podczas epizodów wysokiej wody niż podczas okresów spokojnych,
 * Wartości błędów dla okresów wezbrań i okresów spokojnych są bardzo zbliżone. Oznacza to, że model zachowuje podobny poziom dokładności niezależnie od sytuacji hydrologicznej i nie wykazuje znaczącego pogorszenia jakości podczas epizodów wysokiej wody.
 
 ## 7.6. Stabilność sezonowa
@@ -108,38 +107,37 @@ Wnioski:
 
 | Sezon  | Recall | Precision | F1    | Event Recall |
 | ------ | ------ | --------- | ----- | ------------ |
-| Zima   | 0,991  | 0,475     | 0,642 | 1,000        |
-| Wiosna | 0,625  | 0,312     | 0,417 | 0,500        |
-| Lato   | 0,667  | 1,000     | 0,800 | 0,500        |
+| Zima   | 0,962  | 0,570     | 0,716 | 0,964        |
+| Wiosna | 0,625  | 0,714     | 0,667 | 0,500        |
+| Lato   | 0,417  | 1,000     | 0,588 | 0,500        |
 
 Interpretacja:
-Najlepsze wyniki uzyskano zimą, wykrył wszystkie rzeczywiste epizody (Event Recall = 1,0). Wiosną i latem skuteczność wykrywania spada, co może wynikać z mniejszej liczby epizodów oraz większej zmienności procesów hydrologicznych.
+Najlepsze wyniki uzyskano zimą, gdzie model osiągnął bardzo wysokie pokrycie zdarzeń (96,4%). Wiosną i latem skuteczność wykrywania spada, co może wynikać z mniejszej liczby epizodów oraz większej zmienności procesów hydrologicznych.
 
-Latem model osiągnął najwyższą wartość wskaźnika F1 (0,800) oraz perfekcyjną precyzję (1,0), co oznacza brak fałszywych alarmów.
+Należy również zauważyć, że sezon letni charakteryzuje się bardzo wysoką precyzją (1,0), jednak kosztem niskiego recallu.
 
 ## 7.7. Stabilność rok-po-roku
 
 | Rok  | Recall | Precision | F1    | Event Recall |
 | ---- | ------ | --------- | ----- | ------------ |
-| 2021 | 0,955  | 0,356     | 0,519 | 0,889        |
-| 2022 | 0,955  | 0,712     | 0,816 | 0,846        |
-| 2023 | 1,000  | 0,402     | 0,573 | 1,000        |
-| 2024 | 0,973  | 0,424     | 0,590 | 0,923        |
-| 2025 | 0,861  | 0,564     | 0,681 | 0,812        |
+| 2021 | 0,955  | 0,538     | 0,689 | 0,889        |
+| 2022 | 0,909  | 0,755     | 0,825 | 0,846        |
+| 2023 | 0,902  | 0,463     | 0,612 | 1,000        |
+| 2024 | 0,973  | 0,545     | 0,699 | 0,923        |
+| 2025 | 0,750  | 0,692     | 0,720 | 0,688        |
 
 Interpretacja:
-Model zachowuje względnie stabilne działanie w kolejnych latach. Najwyższą jakość klasyfikacji odnotowano w 2022 roku (F1 = 0,816), natomiast najsłabszy wynik odnotowano w roku 2021 (F1 = 0,519). W latach 2023–2024 model charakteryzował się bardzo wysokim recall, jednak kosztem zwiększonej liczby fałszywych alarmów.
+Model zachowuje względnie stabilne działanie w kolejnych latach. Średni recall wynosi blisko 90%, co oznacza, że większość zdarzeń jest wykrywana niezależnie od roku. Najwyższą jakość klasyfikacji odnotowano w 2022 roku (F1 = 0,825), natomiast największy spadek skuteczności wystąpił w 2025 roku.
 
 
 ## 7.8. Ocena stabilności wyników w czasie
 
-Analiza rok-po-roku wskazuje, że model zachowuje wysoką skuteczność wykrywania epizodów w całym analizowanym okresie.
-Brak wyraźnego trendu spadkowego sugeruje, że model nie wykazuje oznak systematycznej degradacji jakości predykcji i może być uznany za stabilny czasowo.
+Różnice pomiędzy latami nie wskazują jednak na systematyczną degradację modelu, dlatego można uznać jego działanie za stabilne czasowo.
 
 ## 7.9. Wnioski
 
-Przeprowadzona walidacja wskazuje, że model skutecznie identyfikuje epizody wysokiej wody i osiąga wysokie pokrycie zdarzeń (Event Recall = 0,883). Szczególnie dobrze radzi sobie z wykrywaniem wezbrań zimowych oraz z określaniem momentu wystąpienia maksimum poziomu wody.
+Przeprowadzona walidacja wskazuje, że model skutecznie identyfikuje epizody wysokiej wody i osiąga wysokie pokrycie zdarzeń (Event Recall = 0,85). Szczególnie dobrze radzi sobie z wykrywaniem wezbrań zimowych oraz z określaniem momentu wystąpienia maksimum poziomu wody.
 
-Głównym ograniczeniem modelu pozostaje wysoka liczba fałszywych alarmów (Event FAR = 51,7%), która obniża jego precyzję
+Głównym ograniczeniem modelu pozostaje stosunkowo wysoka liczba fałszywych alarmów (Event FAR = 37,5%).
 
 Analiza sezonowa i rok-po-roku potwierdza, że model zachowuje stabilność działania w czasie, a uzyskane wartości F1 oraz recall nie wykazują istotnych trendów pogorszenia jakości.
