@@ -1,6 +1,6 @@
 # PortCanals
 Wykrywanie warunków sprzyjających wysokim poziomom wody (wezbraniom) na podstawie danych  meteorologicznych.
-Członkowie grupy: Maja Markiewicz, Wiktoria Zollondz, Iga Głowacz, Joanna Kamińska, Wiktoria Woroecka
+Członkowie grupy: Maja Markiewicz, Wiktoria Zollondz, Iga Głowacz, Joanna Kamińska, Wiktoria Woronecka
 
 Podział pracy:
 1. Kontrola jakości danych, preprocessing - cały zespół
